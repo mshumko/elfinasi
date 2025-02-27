@@ -548,7 +548,7 @@ class EPD_PAD:
         import matplotlib.pyplot as plt
         from matplotlib.dates import num2date
 
-        import pad
+        import elfinasi
 
         plot_flux = True
         vmin=1
@@ -559,7 +559,7 @@ class EPD_PAD:
         # sc_id = 'A'
         # time_range = ('2021-07-17T16:32', '2021-07-17T16:38')
         # sc_id = 'B'
-        pad_obj = pad.EPD_PAD(
+        pad_obj = elfinasi.EPD_PAD(
             sc_id, time_range, start_pa=0, min_counts=1, spin_time_tol=(2.5, 3.5), accumulate=1
             )
             
@@ -831,8 +831,9 @@ class EPD_PAD:
                 )[0]
             with warnings.catch_warnings(action="ignore"):
                 self._calc_blc_ablc_dlc(i, lc_idx, alc_idx, dlc_idx)
-
-        self.precipitation_ratio = self.blc/self.dlc
+        # Ignore the "invalid value encountered in divide" warning
+        with np.errstate(divide='ignore', invalid='ignore'):
+            self.precipitation_ratio = self.blc/self.dlc
         if np.all(np.isnan(self.precipitation_ratio)):
             warnings.warn(
                 'The BLC/DLC ratios are all NaNs. This could be due to the lc_exclusion_angle '
@@ -1118,11 +1119,14 @@ class EPD_PAD:
         matplotlib.colorbar.Colorbar
             The colorbar object
         """
-        if np.prod((self.blc/self.dlc).shape) != 0:
+        # Ignore the "invalid value encountered in divide" warning
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ratio = self.blc/self.dlc
+        if np.prod(ratio.shape) != 0:
             p =ax.pcolormesh(
                 self.pad.time, 
                 self.energy, 
-                (self.blc/self.dlc).T,
+                ratio.T,
                 shading='nearest',
                 norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax),
                 cmap=cmap
@@ -1130,7 +1134,7 @@ class EPD_PAD:
         else:
             warnings.warn('No valid fluxes.')
             p = None
-        if colorbar and np.prod((self.blc/self.dlc).shape) != 0:
+        if colorbar and np.prod(ratio.shape) != 0:
             _cbar = plt.colorbar(p, ax=ax, shrink=shrink_cbar, fraction=fraction)
             _cbar.set_label(label='BLC/DLC ratio', size=8)
         else:
@@ -1611,8 +1615,9 @@ class EPD_PAD_ARTEMYEV:
                 )[0]
             with warnings.catch_warnings(action="ignore"):
                 self._calc_blc_ablc_dlc(i, lc_idx, alc_idx, dlc_idx)
-
-        self.precipitation_ratio = self.blc/self.dlc
+        # Ignore the "invalid value encountered in divide" warning
+        with np.errstate(divide='ignore', invalid='ignore'):
+            self.precipitation_ratio = self.blc/self.dlc
         relative_ratio_std = np.sqrt(
             (self.blc_std/self.blc)**2 + 
             (self.dlc_std/self.dlc)**2
@@ -1757,10 +1762,13 @@ class EPD_PAD_ARTEMYEV:
         matplotlib.colorbar.Colorbar
             The colorbar object
         """
+        # Ignore the "invalid value encountered in divide" warning
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ratio = self.blc/self.dlc
         p = ax.pcolormesh(
             self.counts['time'], 
             self.counts['energy'], 
-            (self.blc/self.dlc).T,
+            ratio.T,
             shading='nearest',
             norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax),
             cmap=cmap

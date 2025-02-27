@@ -12,7 +12,7 @@ from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import cartopy.crs as ccrs
 import numpy as np
 
-import pad
+import elfinasi
 from map import map_elfin, map_themis
 
 
@@ -80,11 +80,11 @@ cx = fig.add_subplot(bottom_gs[1, :], sharex=bx, sharey=bx)
 
 plt.suptitle(f'THEMIS-A/ELFIN-A/TREx Conjunction | {time_range[0][:10]} | T89 model | {alt} km map altitude')
 
-pad_obj_nflux = pad.EPD_PAD(
+pad_obj_nflux = elfinasi.EPD_PAD(
     elfin_probe, time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
     lc_exclusion_angle=0
 )
-pad_obj_eflux = pad.EPD_PAD(
+pad_obj_eflux = elfinasi.EPD_PAD(
     elfin_probe, time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
     lc_exclusion_angle=0, nflux=False
 )

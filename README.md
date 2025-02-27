@@ -9,6 +9,7 @@ Contains classes to load Electron Losses and Fields Investigation (ELFIN; https:
 ## Installation
 
 TODO: Update to install from github.
+TODO: Replace `import pad` and `pad.` with `elfinasi`.
 
 ```shell
 $ python -m pip install elfinasi

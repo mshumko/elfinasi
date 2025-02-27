@@ -16,7 +16,7 @@ import cartopy.crs as ccrs
 import cartopy.feature
 import asilib.asi
 
-import pad
+import elfinasi
 from map import map_elfin, map_themis
 
 save_locations=False  # Save the THEMIS location and a series of ELFIN locations.
@@ -142,7 +142,7 @@ asis = asilib.Imagers(
         )
 asis.plot_map(ax=cx, min_elevation=10, pcolormesh_kwargs={'rasterized':True}, asi_label=True)
 
-pad_obj_nflux = pad.EPD_PAD(
+pad_obj_nflux = elfinasi.EPD_PAD(
     elfin_id, time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
     lc_exclusion_angle=0
 )

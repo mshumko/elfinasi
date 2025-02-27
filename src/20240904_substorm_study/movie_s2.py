@@ -9,7 +9,7 @@ import pandas as pd
 import pyspedas
 import pytplot
 
-import pad
+import elfinasi
 
 
 R_E = 6378.137  # km
@@ -88,7 +88,7 @@ cx = fig.add_subplot(gs[1, 1], sharex=bx, sharey=bx)
 
 plt.suptitle(f'THEMIS-TREx-ELFIN Conjunction | {time_range[0][:10]} | T89 model | {alt} km map altitude')
 
-pad_obj = pad.EPD_PAD(
+pad_obj = elfinasi.EPD_PAD(
     'a', time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
     lc_exclusion_angle=0
 )
