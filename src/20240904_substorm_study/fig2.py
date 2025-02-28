@@ -116,7 +116,7 @@ for i, (probe, _bmag_lim) in enumerate(zip(themis_probes, _bmag_lims)):
     valid_e_channels = np.where(~np.isnan(sst_xr.v[0, :]))[0]
     p = ax[2].pcolormesh(
         np.array(pyspedas.time_datetime(sst_xr.times)),
-        sst_xr.v[0, valid_e_channels],
+        sst_xr.v[0, valid_e_channels]/1E3,  # Convert to keV units
         sst_xr.y[:, valid_e_channels].T,
         norm=matplotlib.colors.LogNorm(vmin=sst_bounds[i, 0], vmax=sst_bounds[i, 1]),
         rasterized=True
