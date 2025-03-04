@@ -1,0 +1,41 @@
+[project]
+name = "elfinasi"
+version = "0.0.1"
+description = "Load ELFIN L2 data and make pitch angle distributions (PADs), as well as auroral all-sky imagers (ASIs)."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "Mykhaylo Shumko", email = "mike.shumko@jhuapl.edu" },
+]
+license = { text = "GNU General Public License v3 (GPLv3)" }
+classifiers = [
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+]
+dependencies = [
+    "pytest-cov>=6.0.0",
+    "pytest>=7.1.2",
+    "cartopy>=0.22.0",
+    "asilib>=0.25.1",
+    "numpy>=1.24.3",
+    "scipy>=1.10.1",
+    "xarray>=2024.2.0",
+    "aacgmv2>=2.6.3",
+    "manylabels>=0.1.0",
+    "cdflib==0.4.9",
+    "cdasws>=1.8.4",
+    "matplotlib>=3.7.1",
+    "pyspedas>=1.7.0",
+]
+
+[tool.setuptools]
+license-files = ["LICENSE"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project.optional-dependencies]
+
+[tool.black]
+line-length = 100
+target-version = ['py310', 'py311', 'py312', 'py313']
