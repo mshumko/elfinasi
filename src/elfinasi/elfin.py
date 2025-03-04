@@ -1496,7 +1496,7 @@ class EPD_PAD_ARTEMYEV:
         cps_file_paths = list(file_dir.rglob(cps_filename_glob))
         flux_file_paths = list(file_dir.rglob(flux_filename_glob))
         assert len(cps_file_paths) == 1 and len(flux_file_paths) == 1, (
-            f'{cps_file_paths} count files found and {flux_file_paths} '
+            f'{len(cps_file_paths)} count files found and {len(flux_file_paths)} '
             f'flux files found starting in the {file_dir} directory that match '
             f'the {cps_filename_glob} or {flux_filename_glob} glob patterns.'
             )
