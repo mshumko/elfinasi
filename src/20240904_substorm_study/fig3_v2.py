@@ -11,27 +11,30 @@ import matplotlib.dates
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import cartopy.crs as ccrs
 import numpy as np
+import aacgmv2
 
 import elfinasi
 from map import map_elfin, map_themis
 
 
-time_range = ('2022-09-04T04:17:00', '2022-09-04T04:24:00')
+time_range = ('2022-09-04T03:34:00', '2022-09-04T03:40:00')
 plot_times = (
-    datetime(2022, 9, 4, 4, 19, 18),
-    datetime(2022, 9, 4, 4, 20, 18),
-    datetime(2022, 9, 4, 4, 21, 24),
-    datetime(2022, 9, 4, 4, 22, 22)
+    datetime(2022, 9, 4, 3, 36, 42),
+    datetime(2022, 9, 4, 3, 37, 36),
+    datetime(2022, 9, 4, 3, 38, 3),
+    datetime(2022, 9, 4, 3, 39, 12)
 )
 magnetospheric_regions = {
-    'ps':(datetime(2022, 9, 4, 4, 17, 33), datetime(2022, 9, 4, 4, 20, 0), 'purple'),
-    'ib':(datetime(2022, 9, 4, 4, 20, 0), datetime(2022, 9, 4, 4, 20, 25), 'purple'),
-    'rb':(datetime(2022, 9, 4, 4, 20, 25), datetime(2022, 9, 4, 4, 21, 48), 'purple'),
+    'ps/ib?':(datetime(2022, 9, 4, 3, 34, 42), datetime(2022, 9, 4, 3, 38, 3), 'purple'),
+    'rb':(datetime(2022, 9, 4, 3, 38, 3), datetime(2022, 9, 4, 3, 38, 57), 'purple'),
 }
-location_codes = ('ATHA', 'PINA', 'GILL', 'RABB', 'LUCK')
+location_codes = ('PINA', 'GILL', 'RABB', 'LUCK')
 themis_probe = 'a'
-elfin_probe='a'
+elfin_probe='b'
 alt=110
+
+lon_bounds=(-114, -82)
+lat_bounds=(43, 64)
 
 elfin_labels=(
     f'Omnidirectional $e^{{-}}$ number flux',
@@ -69,8 +72,8 @@ bottom_gs = matplotlib.gridspec.GridSpecFromSubplotSpec(
 
 ax = [
     asilib.map.create_map(
-        lon_bounds=(-115, -88), 
-        lat_bounds=(45, 63.5), 
+        lon_bounds=lon_bounds, 
+        lat_bounds=lat_bounds, 
         fig_ax=(fig, top_gs[0, i]), 
         land_color='grey'
         ) for i in range(top_gs.ncols)
@@ -115,6 +118,14 @@ mapped_state = map_elfin(transformed_state, alt=alt)
 # file_path = f'{mapped_state.index[0]:%Y%m%d_%H%M}_elfin{elfin_probe}_{alt}km_footprint.csv'
 # mapped_state.to_csv(file_path, index_label='time')
 
+lat_grid, lon_grid = np.meshgrid(np.linspace(*lat_bounds), np.linspace(*lon_bounds, num=51))
+# Need to pass flattened arrays since aacgmv2 does not work with n-D arrays.
+aacgm_lat_grid, aacgm_lon_grid, _ = aacgmv2.wrapper.convert_latlon_arr(
+    lat_grid.flatten(), lon_grid.flatten(), 110, time_range[0], method_code='G2A'
+    )
+aacgm_lat_grid = aacgm_lat_grid.reshape(lat_grid.shape)
+aacgm_lon_grid = aacgm_lon_grid.reshape(lon_grid.shape)
+
 for time, ax_i, _label in zip(plot_times, ax, string.ascii_lowercase):
     asis = asilib.Imagers(
         [asilib.asi.trex_rgb(location_code=location_code, time=time, alt=alt) 
@@ -150,6 +161,8 @@ for time, ax_i, _label in zip(plot_times, ax, string.ascii_lowercase):
         label=f'THEMIS-{themis_probe.upper()}',
         zorder=2.01
         )
+    cs = ax_i.contour(lon_grid, lat_grid, aacgm_lat_grid, colors='w')
+    ax_i.clabel(cs, inline=True, fontsize=10, fmt=lambda x: f'$\lambda = {{{x}}}^{{\circ}}$')
     if not '_legend' in locals():
         _legend = ax[0].legend(loc='lower left', ncols=2, columnspacing=0.1, handletextpad=0.1, fontsize=8)
     _plot_time = ax_i.text(

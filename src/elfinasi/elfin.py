@@ -841,10 +841,12 @@ class EPD_PAD:
                 )
         # A reminder on how to propagate uncertainties.
         # https://www.geol.lsu.edu/jlorenzo/geophysics/uncertainties/Uncertaintiespart2.html
-        relative_ratio_std = np.sqrt(
-            (self.blc_std/self.blc)**2 + 
-            (self.dlc_std/self.dlc)**2
-            )
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=RuntimeWarning)
+            relative_ratio_std = np.sqrt(
+                (self.blc_std/self.blc)**2 + 
+                (self.dlc_std/self.dlc)**2
+                )
         self.precipitation_ratio_std = relative_ratio_std*self.precipitation_ratio
         return self.blc, self.ablc, self.dlc
     
