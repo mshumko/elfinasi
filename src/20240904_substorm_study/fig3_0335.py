@@ -19,10 +19,10 @@ from map import map_elfin, map_themis
 
 time_range = ('2022-09-04T03:34:00', '2022-09-04T03:40:00')
 plot_times = (
-    datetime(2022, 9, 4, 3, 36, 42),
+    datetime(2022, 9, 4, 3, 35, 43),
     datetime(2022, 9, 4, 3, 37, 36),
     datetime(2022, 9, 4, 3, 38, 3),
-    datetime(2022, 9, 4, 3, 39, 12)
+    datetime(2022, 9, 4, 3, 38, 54)
 )
 magnetospheric_regions = {
     'ps/ib?':(datetime(2022, 9, 4, 3, 34, 42), datetime(2022, 9, 4, 3, 38, 3), 'purple'),
@@ -81,7 +81,10 @@ ax = [
 bx = fig.add_subplot(bottom_gs[0, :])
 cx = fig.add_subplot(bottom_gs[1, :], sharex=bx, sharey=bx)
 
-plt.suptitle(f'THEMIS-{themis_probe}/ELFIN-{elfin_probe}/TREx Conjunction | {time_range[0][:10]} | T89 model | {alt} km map altitude')
+plt.suptitle(
+    f'THEMIS-{themis_probe.upper()}/ELFIN-{elfin_probe.upper()}/TREx Conjunction | {time_range[0][:10]} | '
+    f'T89 model | {alt} km map altitude'
+    )
 
 pad_obj_nflux = elfinasi.EPD_PAD(
     elfin_probe, time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
@@ -118,10 +121,13 @@ mapped_state = map_elfin(transformed_state, alt=alt)
 # file_path = f'{mapped_state.index[0]:%Y%m%d_%H%M}_elfin{elfin_probe}_{alt}km_footprint.csv'
 # mapped_state.to_csv(file_path, index_label='time')
 
-lat_grid, lon_grid = np.meshgrid(np.linspace(*lat_bounds), np.linspace(*lon_bounds, num=51))
+lat_grid, lon_grid = np.meshgrid(
+    np.linspace(lat_bounds[0]-5, lat_bounds[1]+5), 
+    np.linspace(lon_bounds[0]-10, lon_bounds[1]+10, num=51)
+    )
 # Need to pass flattened arrays since aacgmv2 does not work with n-D arrays.
 aacgm_lat_grid, aacgm_lon_grid, _ = aacgmv2.wrapper.convert_latlon_arr(
-    lat_grid.flatten(), lon_grid.flatten(), 110, time_range[0], method_code='G2A'
+    lat_grid.flatten(), lon_grid.flatten(), 110, plot_times[0], method_code='G2A'
     )
 aacgm_lat_grid = aacgm_lat_grid.reshape(lat_grid.shape)
 aacgm_lon_grid = aacgm_lon_grid.reshape(lon_grid.shape)
@@ -161,7 +167,14 @@ for time, ax_i, _label in zip(plot_times, ax, string.ascii_lowercase):
         label=f'THEMIS-{themis_probe.upper()}',
         zorder=2.01
         )
-    cs = ax_i.contour(lon_grid, lat_grid, aacgm_lat_grid, colors='w')
+    cs = ax_i.contour(
+        lon_grid, 
+        lat_grid, 
+        aacgm_lat_grid, 
+        colors='yellow', 
+        transform=ccrs.PlateCarree(), 
+        levels=(55, 60, 65, 70)
+        )
     ax_i.clabel(cs, inline=True, fontsize=10, fmt=lambda x: f'$\lambda = {{{x}}}^{{\circ}}$')
     if not '_legend' in locals():
         _legend = ax[0].legend(loc='lower left', ncols=2, columnspacing=0.1, handletextpad=0.1, fontsize=8)
