@@ -29,7 +29,7 @@ SPEED_OF_LIGHT = 3E8 # ms/s
 R_E = 6378.137  # km
 
 
-time_range = ('2022-09-04T04:10', '2022-09-04T04:25')
+time_range = ('2022-09-04T03:10', '2022-09-04T04:30')
 _time_range = [dateutil.parser.parse(t_i) for t_i in time_range]
 themis_probes = ('a', 'd', 'e')
 sst_bounds = np.array([

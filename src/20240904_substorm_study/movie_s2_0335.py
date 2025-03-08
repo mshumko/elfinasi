@@ -15,8 +15,12 @@ import elfinasi
 R_E = 6378.137  # km
 time_range = ('2022-09-04T03:35', '2022-09-04T03:40')
 location_codes = ('PINA', 'GILL', "LUCK", "RABB", "ATHA")
-themis_probes = ('a', 'd', 'e')
+themis_probes = ('a')
+elfin_id = 'b'
 alt=110
+
+lon_bounds=(-114, -82)
+lat_bounds=(43, 64)
 
 def map_elfin(df, alt=110, hemi_flag=0):
     """
@@ -82,14 +86,14 @@ fig = plt.figure(figsize=(10, 5.5))
 gs = fig.add_gridspec(2, 2,
                       left=0.01, right=0.95, bottom=0.25, top=0.95,
                       wspace=0.18, hspace=0.15)
-ax = asilib.map.create_map(lon_bounds=(-115, -80), lat_bounds=(41, 65), fig_ax=(fig, gs[:, 0]), land_color='grey')
+ax = asilib.map.create_map(lon_bounds=lon_bounds, lat_bounds=lat_bounds, fig_ax=(fig, gs[:, 0]), land_color='grey')
 bx = fig.add_subplot(gs[0, 1])
 cx = fig.add_subplot(gs[1, 1], sharex=bx, sharey=bx)
 
-plt.suptitle(f'THEMIS-TREx-ELFIN Conjunction | {time_range[0][:10]} | T89 model | {alt} km map altitude')
+plt.suptitle(f'THEMIS-TREx-ELFIN{elfin_id.upper()} Conjunction | {time_range[0][:10]} | T89 model | {alt} km map altitude')
 
 pad_obj = elfinasi.EPD_PAD(
-    'a', time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
+    elfin_id, time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
     lc_exclusion_angle=0
 )
 transformed_state = pad_obj.transform_state()
@@ -121,8 +125,6 @@ for _guide_time, _asi_times, _asi_images, _ in gen:
     if '_plot_time' in locals():
         # These variables are used for every timestamp.
         _themisa_loc.remove()
-        _themisd_loc.remove()
-        _themise_loc.remove()
         _plot_time.remove()
 
     if (
@@ -149,28 +151,6 @@ for _guide_time, _asi_times, _asi_images, _ in gen:
         marker='^',
         transform=ccrs.PlateCarree(),
         label='THEMIS-A',
-        zorder=2.01
-        )
-    _themisd_index = themis_mapped_state['d'].index.get_indexer([_guide_time], method='nearest')
-    _themisd_loc = ax.scatter(
-        themis_mapped_state['d'].iloc[_themisd_index, :]['lon'], 
-        themis_mapped_state['d'].iloc[_themisd_index, :]['lat'], 
-        c='orange', 
-        s=30,
-        marker='P',
-        transform=ccrs.PlateCarree(),
-        label='THEMIS-D',
-        zorder=2.01
-        )
-    _themise_index = themis_mapped_state['e'].index.get_indexer([_guide_time], method='nearest')
-    _themise_loc = ax.scatter(
-        themis_mapped_state['e'].iloc[_themise_index, :]['lon'], 
-        themis_mapped_state['e'].iloc[_themise_index, :]['lat'],
-        c='orange',
-        s=30,
-        marker='*',
-        transform=ccrs.PlateCarree(),
-        label='THEMIS-E',
         zorder=2.01
         )
     if not '_legend' in locals():
