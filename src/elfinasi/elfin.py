@@ -32,6 +32,7 @@ import cdflib
 import cdasws
 from asilib.download import Downloader
 
+import elfinasi
 from .validation import validate_time_range
 
 Re = 6378.14  # km
@@ -1345,7 +1346,7 @@ class EPD_PAD:
             )
 
         if pretty_plot:
-            ax.set(ylabel='Energy\n[keV]', yscale='log', facecolor='grey')  # TODO
+            ax.set(ylabel='Energy\n[keV]', yscale='log', facecolor='grey')
         return p, cbar
     
 
@@ -1487,11 +1488,8 @@ class EPD_PAD_ARTEMYEV:
         self.time_range = validate_time_range(time_range)
         self.min_counts = min_counts
         self.lc_exclusion_angle = lc_exclusion_angle
-        
-
-        file_dir = pathlib.Path(
-            f'C:\\Users\\shumkms1\\Box\\MMS\\Mike_studies\\elfin\\epd_l2\\elfin-{self.sc_id}\\fast\\ion'
-            )
+                
+        file_dir = pathlib.Path(elfinasi.data_dir)
         
         cps_filename_glob = f'{self.time_range[0]:%Y-%m-%d}_mike*3dspec_{self.sc_id}_cps*.dat'
         flux_filename_glob = f'{self.time_range[0]:%Y-%m-%d}_mike*3dspec_{self.sc_id}_nflux*.dat'
@@ -1592,22 +1590,22 @@ class EPD_PAD_ARTEMYEV:
         self.ablc_std = np.nan*np.zeros((self.flux['time'].shape[0], self.flux['energy'].shape[0]))
         self.dlc_std = np.nan*np.zeros((self.flux['time'].shape[0], self.flux['energy'].shape[0]))
 
-        # Southern hemisphere
-        ida_southern = np.where(self.lc.angle <= 90)[0]
-        zipped = zip(ida_southern, self.lc.angle[ida_southern], self.alc.angle[ida_southern])
+        # Northern hemisphere
+        ida_northern = np.where(self.lc.angle <= 90)[0]
+        zipped = zip(ida_northern, self.lc.angle[ida_northern], self.alc.angle[ida_northern])
         for i, lc_angle, alc_angle in zipped:
-            lc_idx = np.where(self.flux['pa'] <= lc_angle-self.lc_exclusion_angle)[0]
-            alc_idx = np.where(self.flux['pa'] >= alc_angle+self.lc_exclusion_angle)[0]
+            lc_idx = np.where(self.flux['pa'][i, :] <= lc_angle-self.lc_exclusion_angle)[0]
+            alc_idx = np.where(self.flux['pa'][i, :] >= alc_angle+self.lc_exclusion_angle)[0]
             dlc_idx = np.where(
-                (self.flux['pa'] >= lc_angle+self.lc_exclusion_angle) &
-                (self.flux['pa'] <= alc_angle-self.lc_exclusion_angle)
+                (self.flux['pa'][i, :] >= lc_angle+self.lc_exclusion_angle) &
+                (self.flux['pa'][i, :] <= alc_angle-self.lc_exclusion_angle)
                 )[0]
             with warnings.catch_warnings(action="ignore"):
                 self._calc_blc_ablc_dlc(i, lc_idx, alc_idx, dlc_idx)
                 
-        # Northern hemisphere
-        ida_northern = np.where(self.lc.angle >= 90)[0]
-        zipped = zip(ida_northern, self.lc.angle[ida_northern], self.alc.angle[ida_northern])
+        # Southern hemisphere
+        ida_southern = np.where(self.lc.angle >= 90)[0]
+        zipped = zip(ida_southern, self.lc.angle[ida_southern], self.alc.angle[ida_southern])
         for i, lc_angle, alc_angle in zipped:                
             lc_idx = np.where(self.flux['pa'][i, :] >= lc_angle+self.lc_exclusion_angle)[0]
             alc_idx = np.where(self.flux['pa'][i, :] <= alc_angle-self.lc_exclusion_angle)[0]
