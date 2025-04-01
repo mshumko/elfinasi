@@ -55,19 +55,18 @@ supermag.index = pd.to_datetime(supermag['Date_UTC'], format='%Y-%m-%d %H:%M:%S'
 del(supermag['Date_UTC'])
 supermag[supermag == 999999] = np.nan
 
-fig = plt.figure(figsize=(7, 8))
+fig = plt.figure(figsize=(8, 9))
 n_rows = 6
 
 gs = fig.add_gridspec(
     2, 
     2, 
-    left=0.1, right=0.99, bottom=0.12, top=0.95,
+    left=0.1, right=0.99, bottom=0.07, top=0.95,
     wspace=0.02, hspace=0.15,
-    width_ratios=(0.75, 1),
-    height_ratios=(1.5, 1)
+    height_ratios=(1.2, 1)
     )
-top_gs = gs[0, :].subgridspec(n_rows-2, 1, hspace=0.03)#, wspace=0, hspace=0.01)
-bottom_gs = gs[1, :].subgridspec(2, 2)#, wspace=0.01, hspace=0.01)
+top_gs = gs[0, :].subgridspec(n_rows-2, 1, hspace=0.03)
+bottom_gs = gs[1, :].subgridspec(2, 2, wspace=0.01, hspace=0.03, width_ratios=(1, 2))
 
 x_lim=(-12, 0)
 y_lim=(0, 5)
@@ -125,20 +124,20 @@ ax[-1].xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(_format_xaxis))
 for ax_i, _label in zip([*ax, bx, cx, dx], string.ascii_lowercase):
     ax_i.text(0.01, 0.98, f'({_label})', fontsize=15, transform=ax_i.transAxes, va='top')
 
-def trace_field_line(time, X, kp=50, sysbxes=2):
+def trace_field_line(time, X, kp=50, sysaxes=2):
     """
     sysbxes=2 is GSM
     """
-    LLA = {key:X[i] for i, key in enumerate(['x1', 'x2', 'x3'])}
-    LLA['dateTime'] = time
+    X = {key:X[i] for i, key in enumerate(['x1', 'x2', 'x3'])}
+    X['dateTime'] = time
     maginput = {'Kp':kp}
-    model = IRBEM.MagFields(kext='T89', sysbxes=sysbxes)  
-    out = model.trace_field_line(LLA, maginput)
+    model = IRBEM.MagFields(kext='T89', sysaxes=sysaxes)  
+    out = model.trace_field_line(X, maginput)
 
     # Transform from GEO to GSM
     _coords_obj = IRBEM.Coords()
     r_gsm = _coords_obj.transform(
-        np.full(out['POSIT'][:, 0].shape, LLA['dateTime']), 
+        np.full(out['POSIT'][:, 0].shape, X['dateTime']), 
         out['POSIT'], 
         1, 2)
     return r_gsm
@@ -187,7 +186,7 @@ for _probe, color, marker in zip(themis_probes, colors, markers):
         zorder=2.01
         )
 
-    field_line = trace_field_line(time_range[0], locations[f'themis-{_probe}'])
+    field_line = trace_field_line(time_range[0], locations[f'themis-{_probe}'].astype(float))
     bx.plot(field_line[:, 0], field_line[:, 1], c='k')
     cx.plot(field_line[:, 0], field_line[:, 2], c='k')
 
