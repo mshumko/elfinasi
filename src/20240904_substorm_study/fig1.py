@@ -1,5 +1,5 @@
 """
-Make a THEMIS-GOES location plot.
+Make a location plot with ELFIN, THEMIS, TREx, and POES locations.
 """
 import string
 import pathlib
@@ -12,6 +12,7 @@ import pyspedas
 import pytplot
 import IRBEM
 import numpy as np
+import pandas as pd
 import cartopy.crs as ccrs
 import cartopy.feature
 import asilib.asi
@@ -37,47 +38,90 @@ elfin_times = (
 # )
 trex_image_time = datetime(2022, 9, 4, 4, 21, 24)
 elfin_id = 'a'
-poes_probe = 'noaa18'
 coordinates = 'gsm'
 themis_probes = ('a', 'd', 'e')
 markers = ("*", "P", "D", "o", 'v')
 colors=('orange', 'blue', 'purple', 'k', 'red')
 alt = 110
 locations={}
-location_codes = ('ATHA', 'PINA', 'GILL', 'RABB', 'LUCK')
+asi_location_codes = ('ATHA', 'PINA', 'GILL', 'RABB', 'LUCK')
 no_update=False
+plot_poes = False
+poes_probe = 'noaa18'
 
-fig = plt.figure(figsize=(9, 4.5))
-gs = fig.add_gridspec(2, 2,
-        left=0.07, right=0.99, bottom=0.12, top=0.93,
-        wspace=0.02, hspace=0.05,
-        height_ratios=(1, 1), 
+supermag = pd.read_csv(elfinasi.data_dir / '20250331-19-15-supermag.csv')
+supermag.index = pd.to_datetime(supermag['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
+del(supermag['Date_UTC'])
+supermag[supermag == 999999] = np.nan
+
+fig = plt.figure(figsize=(9, 9))
+n_rows = 6
+height_ratios = np.ones(n_rows)
+height_ratios[-2] = 1.5
+height_ratios[-1] = 1.5
+
+# INSPIRATIONAL CODE
+# gs = mms_fig.add_gridspec(4, len(elfin_time_ranges), hspace=0.55, right=0.95)
+# top_gs = gs[:3, :].subgridspec(3, 1, wspace=0, hspace=0.01)
+# bottom_gs = gs[3, :].subgridspec(1, len(elfin_time_ranges), wspace=0.01, hspace=0.01)
+
+gs = fig.add_gridspec(n_rows, 2,
+        left=0.15, right=0.99, bottom=0.12, top=0.93,
+        wspace=0.02, hspace=0.05, 
+        height_ratios=height_ratios,
         width_ratios=(0.75, 1)
         )
 x_lim=(-12, 0)
 y_lim=(0, 5)
 z_lim =(-2.5, 2.5)
 
-ax = fig.add_subplot(gs[0, 0])
-bx = fig.add_subplot(gs[1, 0], sharex=ax)
-cx = fig.add_subplot(gs[:, 1], projection=ccrs.Orthographic(-100, 50))
-cx.add_feature(cartopy.feature.LAND, color='grey')
-cx.add_feature(cartopy.feature.OCEAN, color='w')
-cx.add_feature(cartopy.feature.COASTLINE, edgecolor='k')
-cx.set_extent([-117, -82, 43, 63])
-cx.gridlines()
+ax = np.zeros(n_rows-2, dtype=object)
+ax[0] = fig.add_subplot(gs[0, :])
+for i in range(1, n_rows-2):
+    ax[i] = fig.add_subplot(gs[i, :], sharex=ax[0])
+bx = fig.add_subplot(gs[-2, 0])
+cx = fig.add_subplot(gs[-1, 0], sharex=bx)
+dx = fig.add_subplot(gs[-2:, 1], projection=ccrs.Orthographic(-100, 50))
+dx.add_feature(cartopy.feature.LAND, color='grey')
+dx.add_feature(cartopy.feature.OCEAN, color='w')
+dx.add_feature(cartopy.feature.COASTLINE, edgecolor='k')
+dx.set_extent([-117, -82, 43, 63])
+dx.gridlines()
 
-for ax_i, _label in zip([ax, bx, bx], string.ascii_lowercase):
-    ax_i.text(0.01, 0.98, f'({_label})', fontsize=15, transform=ax_i.transAxes, va='top')
+ax[0].plot(supermag.index, supermag['GSM_Bz'], c='k', label='Bz')
+ax[0].set_ylabel('GSM Bz [nT]')
+v = np.linalg.norm(supermag[['GSE_Vx', 'GSE_Vy', 'GSM_Vz']], axis=1)
+ax[1].plot(supermag.index, v, c='k', label='|V|')
+ax[1].set_ylabel(f'$|V|$ [km/s]')
+ax[2].plot(supermag.index, supermag.SML, c='k', label='SML')
+ax[2].set_ylabel('SML [nT]')
+ax[3].plot(supermag.index, supermag.SMR, c='k', label='SMR')
+ax[3].set_ylabel('SMR [nT]')
+# for key in ['SMR00', 'SMR06', 'SMR12', 'SMR18']:
+#     ax[4].plot(supermag.index, supermag[key], c='k', label=key)
+# ax[4].set_ylabel('SMR [nT]')
+# ax[4].legend(loc='upper left')
+# ax[4].set_ylim(-200, 200)
 
-def trace_field_line(time, X, kp=50, sysaxes=2):
+for ax_i in ax:
+    ax_i.axvline(elfin_times[0], ls='--', c='k')
+for ax_i in ax[:-1]:
+    ax_i.get_xaxis().set_visible(False)
+for ax_i in ax[[0, 2, 3]]:
+    ax_i.axhline(0, c='k', alpha=0.5)
+ax[-1].set_xlim(supermag.index[0], supermag.index[-1])
+
+for bx_i, _label in zip([bx, cx, dx], string.ascii_lowercase):
+    bx_i.text(0.01, 0.98, f'({_label})', fontsize=15, transform=bx_i.transAxes, va='top')
+
+def trace_field_line(time, X, kp=50, sysbxes=2):
     """
-    sysaxes=2 is GSM
+    sysbxes=2 is GSM
     """
     LLA = {key:X[i] for i, key in enumerate(['x1', 'x2', 'x3'])}
     LLA['dateTime'] = time
     maginput = {'Kp':kp}
-    model = IRBEM.MagFields(kext='T89', sysaxes=sysaxes)  
+    model = IRBEM.MagFields(kext='T89', sysbxes=sysbxes)  
     out = model.trace_field_line(LLA, maginput)
 
     # Transform from GEO to GSM
@@ -122,7 +166,7 @@ for _probe, color, marker in zip(themis_probes, colors, markers):
     themis_mapped_state = map_themis(_probe, time_range_str, alt, no_update=no_update)
 
     _themisa_index = themis_mapped_state.index.get_indexer([time_range[0]], method='nearest')
-    _themisa_loc = cx.scatter(
+    _themisa_loc = dx.scatter(
         themis_mapped_state.iloc[_themisa_index, :]['lon'], 
         themis_mapped_state.iloc[_themisa_index, :]['lat'], 
         c=color, 
@@ -133,14 +177,14 @@ for _probe, color, marker in zip(themis_probes, colors, markers):
         )
 
     field_line = trace_field_line(time_range[0], locations[f'themis-{_probe}'])
-    ax.plot(field_line[:, 0], field_line[:, 1], c='k')
-    bx.plot(field_line[:, 0], field_line[:, 2], c='k')
+    bx.plot(field_line[:, 0], field_line[:, 1], c='k')
+    cx.plot(field_line[:, 0], field_line[:, 2], c='k')
 
 asis = asilib.Imagers(
         [asilib.asi.trex_rgb(location_code=location_code, time=trex_image_time, alt=alt) 
-        for location_code in location_codes]
+        for location_code in asi_location_codes]
         )
-asis.plot_map(ax=cx, min_elevation=10, pcolormesh_kwargs={'rasterized':True}, asi_label=True)
+asis.plot_map(ax=dx, min_elevation=10, pcolormesh_kwargs={'rasterized':True}, asi_label=True)
 
 pad_obj_nflux = elfinasi.EPD_PAD(
     elfin_id, time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
@@ -149,7 +193,7 @@ pad_obj_nflux = elfinasi.EPD_PAD(
 transformed_state = pad_obj_nflux.transform_state()
 transformed_state = transformed_state.loc[time_range[0]:time_range[1]]
 mapped_state = map_elfin(transformed_state, alt=alt)
-cx.plot(
+dx.plot(
     mapped_state['lon'], 
     mapped_state['lat'], 
     c='orange', 
@@ -158,7 +202,7 @@ cx.plot(
     )
 
 for time in elfin_times:
-    elfin_scatter = cx.scatter(
+    elfin_scatter = dx.scatter(
         mapped_state.loc[time, 'lon'], 
         mapped_state.loc[time, 'lat'], 
         c='orange', 
@@ -166,7 +210,7 @@ for time in elfin_times:
         transform=ccrs.PlateCarree(),
         label=f'ELFIN-{elfin_id.upper()}'
         )
-    cx.text(
+    dx.text(
         mapped_state.loc[time, 'lon']+2*np.cos(np.deg2rad(mapped_state.loc[time, 'lat'])), 
         mapped_state.loc[time, 'lat'],
         f'{time:%H:%M:%S}',
@@ -178,8 +222,8 @@ for time in elfin_times:
 
 for (_probe, _loc), marker, color in zip(locations.items(), markers, colors):
     # THEMIS
-    ax.scatter(_loc[0], _loc[1], color=color, marker=marker, zorder=2.01, s=50, label=_probe.upper())
-    bx.scatter(_loc[0], _loc[2], color=color, marker=marker, zorder=2.01, s=50)
+    bx.scatter(_loc[0], _loc[1], color=color, marker=marker, zorder=2.01, s=50, label=_probe.upper())
+    cx.scatter(_loc[0], _loc[2], color=color, marker=marker, zorder=2.01, s=50)
 
 # # Plot NOAA footprints
 # sem_vars = pyspedas.poes.sem(
@@ -197,7 +241,7 @@ for (_probe, _loc), marker, color in zip(locations.items(), markers, colors):
 #     }
 # )
 # poes_footprint = footprint(ephemeris_df, alt=alt)
-# cx.plot(
+# dx.plot(
 #     poes_footprint['lon'], 
 #     poes_footprint['lat'], 
 #     c='w',
@@ -207,9 +251,9 @@ for (_probe, _loc), marker, color in zip(locations.items(), markers, colors):
 #     )
 # ephemeris_indices = poes_footprint.index.get_indexer(poes_times, method='nearest')
 # poes_footprint_snapshots = poes_footprint.iloc[ephemeris_indices, :]
-# cx.legend(loc='lower left')
+# dx.legend(loc='lower left')
 # 
-# cx.scatter(
+# dx.scatter(
 #         poes_footprint_snapshots['lon'], 
 #         poes_footprint_snapshots['lat'], 
 #         c='w', 
@@ -218,7 +262,7 @@ for (_probe, _loc), marker, color in zip(locations.items(), markers, colors):
 #         label=poes_probe.upper()
 #         )
 # for time, mapped_ephemeris_snapshot in poes_footprint_snapshots.iterrows():
-#     cx.text(
+#     dx.text(
 #             mapped_ephemeris_snapshot['lon']-2*np.cos(np.deg2rad(mapped_ephemeris_snapshot['lat'])), 
 #             mapped_ephemeris_snapshot['lat'],
 #             f'{time:%H:%M:%S}',
@@ -228,7 +272,7 @@ for (_probe, _loc), marker, color in zip(locations.items(), markers, colors):
 #             ha='right'
 #             )
 
-# https://matplotlib.org/stable/users/explain/axes/legend_guide.html#proxy-legend-handles
+# https://matplotlib.org/stable/users/explain/bxes/legend_guide.html#proxy-legend-handles
 elfin_legend_line = mlines.Line2D(
     [], [], 
     color='orange', 
@@ -236,35 +280,34 @@ elfin_legend_line = mlines.Line2D(
     markersize=15, 
     label=f'ELFIN-{elfin_id.upper()}'
     )
-cx.legend(handles=[elfin_legend_line], loc='lower left')
-ax.legend()
-ax.set(
+dx.legend(handles=[elfin_legend_line], loc='lower left')
+bx.legend()
+bx.set(
     xlabel=f'$X_{{{coordinates.upper()}}} $ [$R_{{E}}$]', 
     ylabel=f'$Y_{{{coordinates.upper()}}}$ [$R_{{E}}$]', 
     xlim=x_lim, 
     ylim=y_lim
     )
-ax.axis('equal')
-bx.set(
+bx.axis('equal')
+cx.set(
     xlabel=f'$X_{{{coordinates.upper()}}} $ [$R_{{E}}$]', 
     ylabel=f'$Z_{{{coordinates.upper()}}}$ [$R_{{E}}$]', 
     xlim=x_lim, 
     ylim=z_lim
     )
-bx.axhline(0, ls='--', c='k')
-bx.axis('equal')
+cx.axhline(0, ls='--', c='k')
+cx.axis('equal')
 
-for ax_i in [ax, bx]:
+for bx_i in [bx, cx]:
     earth_circle = plt.Circle((0, 0), 1, color='k', fill='grey')
-    ax_i.add_patch(earth_circle)
+    bx_i.add_patch(earth_circle)
 
 seven_re = plt.Circle((0, 0), 7, color='k', fill=None, ls='--')
-ax.add_patch(seven_re)
+bx.add_patch(seven_re)
 
-ax.xaxis.set_visible(False)
+bx.xaxis.set_visible(False)
 plt.suptitle(
-    f'THEMIS, TREx, and ELFIN | {time_range[0]:%Y-%m-%d %H:%M} - {time_range[1]:%H:%M}'
-    f' | {alt} map altitude | T89 field model'
+    f'{time_range[0]:%Y-%m-%d} | THEMIS, TREx, and ELFIN | {alt} map altitude | T89 field model'
     )
 # plt.tight_layout()
 
