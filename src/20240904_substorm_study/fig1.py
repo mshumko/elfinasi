@@ -7,6 +7,7 @@ import dateutil.parser
 from datetime import datetime
 
 import matplotlib.pyplot as plt
+import matplotlib.ticker
 import matplotlib.lines as mlines
 import pyspedas
 import pytplot
@@ -54,34 +55,31 @@ supermag.index = pd.to_datetime(supermag['Date_UTC'], format='%Y-%m-%d %H:%M:%S'
 del(supermag['Date_UTC'])
 supermag[supermag == 999999] = np.nan
 
-fig = plt.figure(figsize=(9, 9))
+fig = plt.figure(figsize=(7, 8))
 n_rows = 6
-height_ratios = np.ones(n_rows)
-height_ratios[-2] = 1.5
-height_ratios[-1] = 1.5
 
-# INSPIRATIONAL CODE
-# gs = mms_fig.add_gridspec(4, len(elfin_time_ranges), hspace=0.55, right=0.95)
-# top_gs = gs[:3, :].subgridspec(3, 1, wspace=0, hspace=0.01)
-# bottom_gs = gs[3, :].subgridspec(1, len(elfin_time_ranges), wspace=0.01, hspace=0.01)
+gs = fig.add_gridspec(
+    2, 
+    2, 
+    left=0.1, right=0.99, bottom=0.12, top=0.95,
+    wspace=0.02, hspace=0.15,
+    width_ratios=(0.75, 1),
+    height_ratios=(1.5, 1)
+    )
+top_gs = gs[0, :].subgridspec(n_rows-2, 1, hspace=0.03)#, wspace=0, hspace=0.01)
+bottom_gs = gs[1, :].subgridspec(2, 2)#, wspace=0.01, hspace=0.01)
 
-gs = fig.add_gridspec(n_rows, 2,
-        left=0.15, right=0.99, bottom=0.12, top=0.93,
-        wspace=0.02, hspace=0.05, 
-        height_ratios=height_ratios,
-        width_ratios=(0.75, 1)
-        )
 x_lim=(-12, 0)
 y_lim=(0, 5)
 z_lim =(-2.5, 2.5)
 
 ax = np.zeros(n_rows-2, dtype=object)
-ax[0] = fig.add_subplot(gs[0, :])
+ax[0] = fig.add_subplot(top_gs[0, :])
 for i in range(1, n_rows-2):
-    ax[i] = fig.add_subplot(gs[i, :], sharex=ax[0])
-bx = fig.add_subplot(gs[-2, 0])
-cx = fig.add_subplot(gs[-1, 0], sharex=bx)
-dx = fig.add_subplot(gs[-2:, 1], projection=ccrs.Orthographic(-100, 50))
+    ax[i] = fig.add_subplot(top_gs[i, :], sharex=ax[0])
+bx = fig.add_subplot(bottom_gs[0, 0])
+cx = fig.add_subplot(bottom_gs[1, 0], sharex=bx)
+dx = fig.add_subplot(bottom_gs[:, 1], projection=ccrs.Orthographic(-100, 50))
 dx.add_feature(cartopy.feature.LAND, color='grey')
 dx.add_feature(cartopy.feature.OCEAN, color='w')
 dx.add_feature(cartopy.feature.COASTLINE, edgecolor='k')
@@ -106,13 +104,26 @@ ax[3].set_ylabel('SMR [nT]')
 for ax_i in ax:
     ax_i.axvline(elfin_times[0], ls='--', c='k')
 for ax_i in ax[:-1]:
-    ax_i.get_xaxis().set_visible(False)
-for ax_i in ax[[0, 2, 3]]:
-    ax_i.axhline(0, c='k', alpha=0.5)
+    # ax_i.get_xaxis().set_visible(False)
+    ax_i.set_xticklabels([])
+ax[0].axhline(0, c='k', alpha=0.5)
 ax[-1].set_xlim(supermag.index[0], supermag.index[-1])
 
-for bx_i, _label in zip([bx, cx, dx], string.ascii_lowercase):
-    bx_i.text(0.01, 0.98, f'({_label})', fontsize=15, transform=bx_i.transAxes, va='top')
+def _format_xaxis(tick_val, tick_pos):
+    """
+    The tick magic to include the date only on the first tick, and ticks at midnight.
+    """
+    tick_time = matplotlib.dates.num2date(tick_val).replace(tzinfo=None)
+    if (tick_pos==0) or ((tick_time.hour == 0) and (tick_time.minute == 0)):
+        ticks = tick_time.strftime('%H:%M') + '\n' + tick_time.strftime('%Y-%m-%d')
+    else:
+        ticks = tick_time.strftime('%H:%M')
+    return ticks
+
+ax[-1].xaxis.set_major_formatter(matplotlib.ticker.FuncFormatter(_format_xaxis))
+
+for ax_i, _label in zip([*ax, bx, cx, dx], string.ascii_lowercase):
+    ax_i.text(0.01, 0.98, f'({_label})', fontsize=15, transform=ax_i.transAxes, va='top')
 
 def trace_field_line(time, X, kp=50, sysbxes=2):
     """
@@ -185,6 +196,7 @@ asis = asilib.Imagers(
         for location_code in asi_location_codes]
         )
 asis.plot_map(ax=dx, min_elevation=10, pcolormesh_kwargs={'rasterized':True}, asi_label=True)
+dx.text(0.01, 0.98, f'     {trex_image_time:%H:%M:%S}', fontsize=15, transform=dx.transAxes, va='top')
 
 pad_obj_nflux = elfinasi.EPD_PAD(
     elfin_id, time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
@@ -295,7 +307,7 @@ cx.set(
     xlim=x_lim, 
     ylim=z_lim
     )
-cx.axhline(0, ls='--', c='k')
+cx.axhline(0, c='k', alpha=0.5)
 cx.axis('equal')
 
 for bx_i in [bx, cx]:
@@ -309,7 +321,6 @@ bx.xaxis.set_visible(False)
 plt.suptitle(
     f'{time_range[0]:%Y-%m-%d} | THEMIS, TREx, and ELFIN | {alt} map altitude | T89 field model'
     )
-# plt.tight_layout()
 
 if save_locations:
     save_dir = pathlib.Path(__file__).parent / 'data'
