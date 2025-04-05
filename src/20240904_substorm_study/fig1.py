@@ -86,7 +86,7 @@ dx.set_extent([-117, -82, 43, 63])
 dx.gridlines()
 
 ax[0].plot(supermag.index, supermag['GSM_Bz'], c='k', label='Bz')
-ax[0].set_ylabel('GSM Bz [nT]')
+ax[0].set_ylabel(f'IMF $B_{{z}}$ [nT]')
 v = np.linalg.norm(supermag[['GSE_Vx', 'GSE_Vy', 'GSM_Vz']], axis=1)
 ax[1].plot(supermag.index, v, c='k', label='|V|')
 ax[1].set_ylabel(f'$|V|$ [km/s]')
