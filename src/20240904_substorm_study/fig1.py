@@ -94,11 +94,6 @@ ax[2].plot(supermag.index, supermag.SML, c='k', label='SML')
 ax[2].set_ylabel('SML [nT]')
 ax[3].plot(supermag.index, supermag.SMR, c='k', label='SMR')
 ax[3].set_ylabel('SMR [nT]')
-# for key in ['SMR00', 'SMR06', 'SMR12', 'SMR18']:
-#     ax[4].plot(supermag.index, supermag[key], c='k', label=key)
-# ax[4].set_ylabel('SMR [nT]')
-# ax[4].legend(loc='upper left')
-# ax[4].set_ylim(-200, 200)
 
 for ax_i in ax:
     ax_i.axvline(elfin_times[0], ls='--', c='k')
@@ -195,7 +190,7 @@ asis = asilib.Imagers(
         for location_code in asi_location_codes]
         )
 asis.plot_map(ax=dx, min_elevation=10, pcolormesh_kwargs={'rasterized':True}, asi_label=True)
-dx.text(0.01, 0.98, f'     {trex_image_time:%H:%M:%S}', fontsize=15, transform=dx.transAxes, va='top')
+dx.text(0.01, 0.98, f'     {trex_image_time:%H:%M:%S} | {alt} km altitude', fontsize=15, transform=dx.transAxes, va='top')
 
 pad_obj_nflux = elfinasi.EPD_PAD(
     elfin_id, time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
@@ -231,57 +226,13 @@ for time in elfin_times:
         ha='left'
         )
 
-for (_probe, _loc), marker, color in zip(locations.items(), markers, colors):
+themis_scatter_objects = len(locations)*[None]
+for i, ((_probe, _loc), marker, color) in enumerate(zip(locations.items(), markers, colors)):
     # THEMIS
-    bx.scatter(_loc[0], _loc[1], color=color, marker=marker, zorder=2.01, s=50, label=_probe.upper())
+    themis_scatter_objects[i] = bx.scatter(
+        _loc[0], _loc[1], color=color, marker=marker, zorder=2.01, s=50, label=f'{_probe.upper()}'
+        )
     cx.scatter(_loc[0], _loc[2], color=color, marker=marker, zorder=2.01, s=50)
-
-# # Plot NOAA footprints
-# sem_vars = pyspedas.poes.sem(
-#     trange=time_range_str, 
-#     probe=poes_probe, 
-#     time_clip=True, 
-#     no_update=True
-#     )
-# ephemeris_df = pd.DataFrame(
-#     index=pyspedas.data_quants['lat'].time,
-#     data={
-#         'alt':pyspedas.data_quants['alt'].to_numpy(),
-#         'lat':pyspedas.data_quants['lat'].to_numpy(),
-#         'lon':pyspedas.data_quants['lon'].to_numpy(),
-#     }
-# )
-# poes_footprint = footprint(ephemeris_df, alt=alt)
-# dx.plot(
-#     poes_footprint['lon'], 
-#     poes_footprint['lat'], 
-#     c='w',
-#     ls='--',
-#     transform=ccrs.PlateCarree(), 
-#     label=f'NOAA-{poes_probe[-2:]}'
-#     )
-# ephemeris_indices = poes_footprint.index.get_indexer(poes_times, method='nearest')
-# poes_footprint_snapshots = poes_footprint.iloc[ephemeris_indices, :]
-# dx.legend(loc='lower left')
-# 
-# dx.scatter(
-#         poes_footprint_snapshots['lon'], 
-#         poes_footprint_snapshots['lat'], 
-#         c='w', 
-#         s=30,
-#         transform=ccrs.PlateCarree(),
-#         label=poes_probe.upper()
-#         )
-# for time, mapped_ephemeris_snapshot in poes_footprint_snapshots.iterrows():
-#     dx.text(
-#             mapped_ephemeris_snapshot['lon']-2*np.cos(np.deg2rad(mapped_ephemeris_snapshot['lat'])), 
-#             mapped_ephemeris_snapshot['lat'],
-#             f'{time:%H:%M:%S}',
-#             transform=ccrs.PlateCarree(),
-#             color='white',
-#             va='center',
-#             ha='right'
-#             )
 
 # https://matplotlib.org/stable/users/explain/bxes/legend_guide.html#proxy-legend-handles
 elfin_legend_line = mlines.Line2D(
@@ -291,8 +242,8 @@ elfin_legend_line = mlines.Line2D(
     markersize=15, 
     label=f'ELFIN-{elfin_id.upper()}'
     )
-dx.legend(handles=[elfin_legend_line], loc='lower left')
-bx.legend()
+dx.legend(handles=themis_scatter_objects+[elfin_legend_line], loc='lower left', ncol=2)
+# bx.legend()
 bx.set(
     xlabel=f'$X_{{{coordinates.upper()}}} $ [$R_{{E}}$]', 
     ylabel=f'$Y_{{{coordinates.upper()}}}$ [$R_{{E}}$]', 
@@ -316,9 +267,12 @@ for bx_i in [bx, cx]:
 seven_re = plt.Circle((0, 0), 7, color='k', fill=None, ls='--')
 bx.add_patch(seven_re)
 
+bx.text(0.01, 0.98, f'     T89', fontsize=15, transform=bx.transAxes, va='top')
+cx.text(0.01, 0.98, f'    T89', fontsize=15, transform=cx.transAxes, va='top')
+
 bx.xaxis.set_visible(False)
 plt.suptitle(
-    f'{time_range[0]:%Y-%m-%d} | THEMIS, TREx, and ELFIN | {alt} map altitude | T89 field model'
+    f'{time_range[0]:%Y-%m-%d} | Geomagnetic Indices and Observatory Locations'
     )
 
 if save_locations:
