@@ -11,6 +11,7 @@ import matplotlib.dates
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import cartopy.crs as ccrs
 import numpy as np
+import pandas as pd
 
 import elfinasi
 from map import map_elfin, map_themis
@@ -37,6 +38,11 @@ elfin_labels=(
     f'Omnidirectional $e^{{-}}$ number flux',
     'Loss cone filling ratio',
 )
+
+# sst19_file_path = elfinasi.data_dir / '20220904_0418_0424_elfina_mapping_sst19.txt'
+# sst19_df = pd.read_csv(sst19_file_path, delim_whitespace=True, index_col=0, parse_dates=True)
+# sst19_df['IBeReEnergy'][sst19_df['IBeReEnergy']==-1000] = np.nan
+# # sst19_df.index -= pd.Timedelta(seconds=40)
 
 themis_mapped_state = {themis_probe:map_themis(themis_probe, time_range, alt)}
 
@@ -78,7 +84,7 @@ ax = [
 bx = fig.add_subplot(bottom_gs[0, :])
 cx = fig.add_subplot(bottom_gs[1, :], sharex=bx, sharey=bx)
 
-plt.suptitle(f'THEMIS-{themis_probe}/ELFIN-{elfin_probe}/TREx Conjunction | {time_range[0][:10]} | T89 model | {alt} km map altitude')
+plt.suptitle(f'THEMIS-{themis_probe.upper()}/ELFIN-{elfin_probe.upper()}/TREx Conjunction | {time_range[0][:10]} | T89 model | {alt} km map altitude')
 
 pad_obj_nflux = elfinasi.EPD_PAD(
     elfin_probe, time_range, start_pa=0, min_counts=None, accumulate=1, spin_time_tol=(2.5, 12),
@@ -103,6 +109,7 @@ _cbar = plt.colorbar(p, ax=bx, shrink=0.9, fraction=0.05, pad=0.01)
 _cbar.set_label(label=pad_obj_nflux._flux_units, size=8)
 
 p, _ = pad_obj_nflux.plot_blc_dlc_ratio(cx, labels=True, colorbar=False, vmin=1E-2, vmax=1)
+# cx.plot(sst19_df.index, sst19_df['IBeReEnergy'], c='r', lw=5, label='SST19 IBeRe Energy')
 _cbar = plt.colorbar(p, ax=cx, shrink=0.9, fraction=0.05, pad=0.01)
 _cbar.set_label(label=f'$j_{{||}}/j_{{\perp}}$', size=10)
 
