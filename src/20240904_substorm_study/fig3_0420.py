@@ -108,7 +108,8 @@ p, _ = pad_obj_nflux.plot_omni(
 _cbar = plt.colorbar(p, ax=bx, shrink=0.9, fraction=0.05, pad=0.01)
 _cbar.set_label(label=pad_obj_nflux._flux_units, size=8)
 
-p, _ = pad_obj_nflux.plot_blc_dlc_ratio(cx, labels=True, colorbar=False, vmin=1E-2, vmax=1)
+p, _ = pad_obj_nflux.plot_blc_dlc_ratio(cx, labels=True, colorbar=False, vmin=1E-2, vmax=1.5)
+cx.contour(pad_obj_nflux.pad.time, pad_obj_nflux.energy, (pad_obj_nflux.blc/pad_obj_nflux.dlc).T, levels=[0.9], colors='k', linewidths=0.5)
 # cx.plot(sst19_df.index, sst19_df['IBeReEnergy'], c='r', lw=5, label='SST19 IBeRe Energy')
 _cbar = plt.colorbar(p, ax=cx, shrink=0.9, fraction=0.05, pad=0.01)
 _cbar.set_label(label=f'$j_{{||}}/j_{{\perp}}$', size=10)
