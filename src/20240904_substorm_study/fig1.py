@@ -31,12 +31,16 @@ elfin_times = (
     datetime(2022, 9, 4, 4, 21, 24),
     datetime(2022, 9, 4, 4, 22, 22)
 )
+keogram_time_range = (datetime(2022, 9, 4, 2, 0, 0, 0), datetime(2022, 9, 4, 12, 0, 0, 0))
 # poes_times = (
 #     datetime(2022, 9, 4, 4, 24, 0),
 #     datetime(2022, 9, 4, 4, 25, 0),
 #     datetime(2022, 9, 4, 4, 26, 0),
 #     datetime(2022, 9, 4, 4, 27, 0)
 # )
+gill_asi = asilib.asi.trex_rgb('gill', time_range=keogram_time_range)
+pina_asi = asilib.asi.trex_rgb('pina', time_range=keogram_time_range)
+
 trex_image_time = datetime(2022, 9, 4, 4, 21, 24)
 elfin_id = 'a'
 coordinates = 'gsm'
@@ -56,7 +60,7 @@ del(supermag['Date_UTC'])
 supermag[supermag == 999999] = np.nan
 
 fig = plt.figure(figsize=(8, 9))
-n_rows = 6
+n_rows = 7
 
 gs = fig.add_gridspec(
     2, 
@@ -184,6 +188,16 @@ for _probe, color, marker in zip(themis_probes, colors, markers):
     field_line = trace_field_line(time_range[0], locations[f'themis-{_probe}'].astype(float))
     bx.plot(field_line[:, 0], field_line[:, 1], c='k')
     cx.plot(field_line[:, 0], field_line[:, 2], c='k')
+
+gill_asi = asilib.asi.trex_rgb('gill', time_range=keogram_time_range)
+pina_asi = asilib.asi.trex_rgb('pina', time_range=keogram_time_range)
+# Plot keogram along THEMIS's latitude.
+_themis_lon = -98.2  # By eye---too lazy to copy the mapping code here.
+gill_keogram_path=np.stack((np.linspace(55, 60, num=500), _themis_lon*np.ones(500)), axis=1)
+pina_keogram_path=np.stack((np.linspace(45, 55.5, num=500), _themis_lon*np.ones(500)), axis=1)
+gill_asi.plot_keogram(ax=ax[-1], aacgm=True, title=False, path=gill_keogram_path, pcolormesh_kwargs={'rasterized':True})
+pina_asi.plot_keogram(ax=ax[-1], aacgm=True, title=False, path=pina_keogram_path, pcolormesh_kwargs={'rasterized':True})
+ax[-1].set(ylabel=f'AACGM ${{\lambda}}$ [${{\circ}}$]')
 
 asis = asilib.Imagers(
         [asilib.asi.trex_rgb(location_code=location_code, time=trex_image_time, alt=alt) 
