@@ -941,6 +941,7 @@ class EPD_PAD:
             energy:int=63,
             flux=True,
             lc_lines:bool=True, 
+            lc_label_size:int=6,
             size:int=3, 
             vmin:float=None, 
             vmax:float=None,
@@ -960,6 +961,8 @@ class EPD_PAD:
             Plot the counts or flux.
         lc_lines:bool  
             Toggles if the loss and anti-loss cone lines
+        lc_label_size: int
+            The size of the loss and anti-loss cone labels.
         size: int
             The scatter point size, passed directly into plt.scatter().
         vmin: float
@@ -1006,7 +1009,7 @@ class EPD_PAD:
             ax.set_yticks(np.arange(0, 181, 30))
 
         if lc_lines:
-            self._plot_lc_lines(ax)
+            self._plot_lc_lines(ax, label_size=lc_label_size)
         return scat, _cbar
     
     def plot_pad_spectrogram(
@@ -1014,7 +1017,8 @@ class EPD_PAD:
             ax:plt.Axes, 
             energy:int=63,
             flux=True,
-            lc_lines:bool=True, 
+            lc_lines:bool=True,
+            lc_label_size:int=6,
             vmin:float=None, 
             vmax:float=None,
             pretty_plot:bool=True
@@ -1032,6 +1036,8 @@ class EPD_PAD:
             Plot the counts or flux.
         lc_lines:bool  
             Toggles if the loss and anti-loss cone lines
+        lc_label_size: int
+            The size of the loss and anti-loss cone labels.
         vmin: float
             The minimum value to plot of the logarithmic color scale.
         vmax: float
@@ -1068,10 +1074,10 @@ class EPD_PAD:
             ax.set_yticks(np.arange(0, 181, 30))
 
         if lc_lines:
-            self._plot_lc_lines(ax)
+            self._plot_lc_lines(ax, label_size=lc_label_size)
         return p, _cbar
 
-    def _plot_lc_lines(self, ax):
+    def _plot_lc_lines(self, ax, label_size=6):
         ax.plot(self.lc.time, self.lc.angle, ls='solid', c='w')
         ax.plot(self.alc.time, self.alc.angle, ls='dashed', c='w')
         if self.lc.angle[0] < 90:
@@ -1081,10 +1087,10 @@ class EPD_PAD:
             lc_va='bottom'
             alc_va='top'
         ax.text(
-            self.lc.time[0], self.lc.angle[0], 'Loss cone', va=lc_va, size=6, color='white'
+            self.lc.time[0], self.lc.angle[0], 'Loss cone', va=lc_va, size=label_size, color='white'
             )
         ax.text(
-            self.alc.time[0], self.alc.angle[0], 'Anti-loss cone', va=alc_va, size=6, color='white'
+            self.alc.time[0], self.alc.angle[0], 'Anti-loss cone', va=alc_va, size=label_size, color='white'
             )
 
     def plot_blc_dlc_ratio(
