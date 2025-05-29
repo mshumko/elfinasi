@@ -33,8 +33,10 @@ location_codes = ('ATHA', 'PINA', 'GILL', 'RABB', 'LUCK')
 themis_probe = 'a'
 elfin_probe='a'
 alt=110
+pad_energy = 63  # keV
 
 elfin_labels=(
+    f'{pad_energy} keV spin-resolved flux',
     f'Omnidirectional $e^{{-}}$ number flux',
     'Loss cone filling ratio',
 )
@@ -46,7 +48,7 @@ elfin_labels=(
 
 themis_mapped_state = {themis_probe:map_themis(themis_probe, time_range, alt)}
 
-fig = plt.figure(figsize=(9, 6))
+fig = plt.figure(figsize=(9, 7.5))
 # Add a gridspec with two rows and two columns and a ratio of 1 to 4 between
 # the size of the marginal Axes and the main Axes in both directions.
 # Also adjust the subplot parameters for a square plot.
@@ -58,7 +60,7 @@ outer_gridspec = fig.add_gridspec(
     bottom=0.20, 
     top=0.97,
     hspace=0.1,
-    height_ratios=(1, 1)
+    height_ratios=(0.75, 1)
     )
 top_gs = matplotlib.gridspec.GridSpecFromSubplotSpec(
     1, 
@@ -68,9 +70,9 @@ top_gs = matplotlib.gridspec.GridSpecFromSubplotSpec(
     )
 bottom_gs = matplotlib.gridspec.GridSpecFromSubplotSpec(
     len(elfin_labels), 
-    1, 
+    10, 
     subplot_spec=outer_gridspec[1, 0], 
-    hspace=0.05
+    hspace=0.05,
     )
 
 ax = [
@@ -81,8 +83,9 @@ ax = [
         land_color='grey'
         ) for i in range(top_gs.ncols)
     ]
-bx = fig.add_subplot(bottom_gs[0, :])
-cx = fig.add_subplot(bottom_gs[1, :], sharex=bx, sharey=bx)
+bx = fig.add_subplot(bottom_gs[0, 1:])
+cx = fig.add_subplot(bottom_gs[1, 1:], sharex=bx)
+dx = fig.add_subplot(bottom_gs[2, 1:], sharex=cx, sharey=cx)
 
 plt.suptitle(f'THEMIS-{themis_probe.upper()}/ELFIN-{elfin_probe.upper()}/TREx Conjunction | {time_range[0][:10]} | T89 model | {alt} km map altitude')
 
@@ -102,22 +105,37 @@ relativistic_eflux = np.nansum(eflux_ergs, axis=1)
 
 transformed_state = pad_obj_nflux.transform_state()
 transformed_state = transformed_state.loc[time_range[0]:time_range[1]]
-p, _ = pad_obj_nflux.plot_omni(
-    bx, labels=True, colorbar=False, vmin=1E2, vmax=2E7, pretty_plot=False
+
+vmin = 1E2
+vmax = 2E7
+pad_obj_nflux.plot_pad_scatter(
+    bx, energy=pad_energy, colorbar=False, vmin=vmin, vmax=vmax, pretty_plot=False, lc_label_size=10
     )
-_cbar = plt.colorbar(p, ax=bx, shrink=0.9, fraction=0.05, pad=0.01)
-_cbar.set_label(label=pad_obj_nflux._flux_units, size=8)
+# _cbar = plt.colorbar(pbx, ax=bx, shrink=0.9, fraction=0.05, pad=0.01, ticks=np.logspace(2, 7, 6))
+# _cbar.set_label(label=pad_obj_nflux._flux_units, size=8)
+bx.set_ylabel(f'Pitch Angle [$\circ$]', size=10)
+bx.set_yticks(np.arange(0, 181, 30))
+bx.set_facecolor('grey')
 
-p, _ = pad_obj_nflux.plot_blc_dlc_ratio(cx, labels=True, colorbar=False, vmin=1E-2, vmax=1.5)
-cx.contour(pad_obj_nflux.pad.time, pad_obj_nflux.energy, (pad_obj_nflux.blc/pad_obj_nflux.dlc).T, levels=[0.9], colors='k', linewidths=0.5)
-# cx.plot(sst19_df.index, sst19_df['IBeReEnergy'], c='r', lw=5, label='SST19 IBeRe Energy')
-_cbar = plt.colorbar(p, ax=cx, shrink=0.9, fraction=0.05, pad=0.01)
-_cbar.set_label(label=f'$j_{{||}}/j_{{\perp}}$', size=10)
+p, _ = pad_obj_nflux.plot_omni(
+    cx, labels=True, colorbar=False, vmin=vmin, vmax=vmax, pretty_plot=False
+    )
+_cbar = plt.colorbar(
+    p, ax=[bx, cx], shrink=0.9, fraction=0.05, pad=0.01, ticks=np.logspace(2, 7, 6)
+    )
+assert pad_obj_nflux._flux_units == '#/(cm^2*s*str*MeV)'
+_cbar.set_label(label=f'cm$^{-2}$ s$^{-1}$ sr$^{-1}$ MeV$^{-1}$', size=12)
 
-pad_obj_nflux.plot_position(cx)
-cx.xaxis.set_major_locator(plt.MaxNLocator(7))
-cx.xaxis.set_label_coords(-0.07, -0.007*7)
-cx.xaxis.label.set_size(9)
+p, _ = pad_obj_nflux.plot_blc_dlc_ratio(dx, labels=True, colorbar=False, vmin=1E-2, vmax=1.5)
+dx.contour(pad_obj_nflux.pad.time, pad_obj_nflux.energy, (pad_obj_nflux.blc/pad_obj_nflux.dlc).T, levels=[1], colors='k', linewidths=0.5)
+# dx.plot(sst19_df.index, sst19_df['IBeReEnergy'], c='r', lw=5, label='SST19 IBeRe Energy')
+_cbar = plt.colorbar(p, ax=dx, shrink=0.9, fraction=0.05, pad=0.01)
+_cbar.set_label(label=f'$j_{{||}}/j_{{\perp}}$', size=12)
+
+pad_obj_nflux.plot_position(dx)
+dx.xaxis.set_major_locator(plt.MaxNLocator(7))
+dx.xaxis.set_label_coords(-0.07, -0.007*7)
+dx.xaxis.label.set_size(9)
 
 mapped_state = map_elfin(transformed_state, alt=alt)
 # file_path = f'{mapped_state.index[0]:%Y%m%d_%H%M}_elfin{elfin_probe}_{alt}km_footprint.csv'
@@ -164,7 +182,7 @@ for time, ax_i, _label in zip(plot_times, ax, string.ascii_lowercase):
         0.01, 0.99, f'({_label}) {time:%H:%M:%S}', va='top', transform=ax_i.transAxes, fontsize=12
         )
     
-# Connect the subplots and add vertical lines to bx and cx.
+# Connect the subplots and add vertical lines to cx and dx.
 for ax_i, image_time_numeric in zip(ax, matplotlib.dates.date2num(plot_times)):
     line = matplotlib.patches.ConnectionPatch(
         xyA=(0.5, 0), coordsA=ax_i.transAxes,
@@ -172,37 +190,44 @@ for ax_i, image_time_numeric in zip(ax, matplotlib.dates.date2num(plot_times)):
         ls='--')
     ax_i.add_artist(line)
 
-    for _other_ax in [bx, cx]:
+    for _other_ax in [bx, cx, dx]:
         _other_ax.axvline(image_time_numeric, c='k', ls='--', alpha=1)
 
-_z = zip([bx, cx], string.ascii_lowercase[len(ax):], elfin_labels)
+_z = zip([bx, cx, dx], string.ascii_lowercase[len(ax):], elfin_labels)
 for _other_ax, letter_label, elfin_label in _z:  # Just need to run this loop once
     _text = _other_ax.text(
         0.01, 
         0.99, 
-        f'({letter_label}) {elfin_label}', 
+        f'({letter_label}) {elfin_label}',
         va='top', 
         transform=_other_ax.transAxes, 
         fontsize=12
         )
     _text.set_bbox(dict(facecolor='white', linewidth=0, pad=0.1, edgecolor='k'))
+cx.get_xaxis().set_visible(False)
 bx.get_xaxis().set_visible(False)
+
+# for ax_i in [bx, cx, dx]:
+#     divider = make_axes_locatable(ax_i)
+#     cax = divider.append_axes("left", size="8%", pad=0.08)
+#     cax.remove()
 
 for ax_i in [bx, cx]:
     divider = make_axes_locatable(ax_i)
-    cax = divider.append_axes("left", size="8%", pad=0.08)
+    cax = divider.append_axes("right", size="5.5%", pad=0.08)
     cax.remove()
 
+# Annotate the magnetospheric regions.
 mixed_transform = transforms.blended_transform_factory(bx.transData, bx.transAxes)
 for _loc, (_st, _ed, _c) in magnetospheric_regions.items():
     bx.text(
-        _st+(_ed-_st)/2, 1.05, _loc.upper(), 
+        _st+(_ed-_st)/2, 1.06, _loc.upper(), 
         color='k', transform=mixed_transform,
         ha='center', va='center',
         c='w'
         )
     rect = matplotlib.patches.Rectangle(
-        (matplotlib.dates.date2num(_st), 1),  # plt.Rectangle can't handle datetime().
+        (matplotlib.dates.date2num(_st), 1.01),  # plt.Rectangle can't handle datetime().
         (matplotlib.dates.date2num(_ed)-matplotlib.dates.date2num(_st)), 
         0.15, 
         facecolor=_c,
