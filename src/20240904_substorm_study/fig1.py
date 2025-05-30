@@ -31,15 +31,7 @@ elfin_times = (
     datetime(2022, 9, 4, 4, 21, 24),
     datetime(2022, 9, 4, 4, 22, 22)
 )
-keogram_time_range = (datetime(2022, 9, 4, 2, 0, 0, 0), datetime(2022, 9, 4, 12, 0, 0, 0))
-# poes_times = (
-#     datetime(2022, 9, 4, 4, 24, 0),
-#     datetime(2022, 9, 4, 4, 25, 0),
-#     datetime(2022, 9, 4, 4, 26, 0),
-#     datetime(2022, 9, 4, 4, 27, 0)
-# )
-gill_asi = asilib.asi.trex_rgb('gill', time_range=keogram_time_range)
-pina_asi = asilib.asi.trex_rgb('pina', time_range=keogram_time_range)
+keogram_time_range = (datetime(2022, 9, 4, 2, 37, 0, 0), datetime(2022, 9, 4, 10, 0, 0, 0))
 
 trex_image_time = datetime(2022, 9, 4, 4, 21, 24)
 elfin_id = 'a'
@@ -51,8 +43,6 @@ alt = 110
 locations={}
 asi_location_codes = ('ATHA', 'PINA', 'GILL', 'RABB', 'LUCK')
 no_update=False
-plot_poes = False
-poes_probe = 'noaa18'
 
 supermag = pd.read_csv(elfinasi.data_dir / '20250331-19-15-supermag.csv')
 supermag.index = pd.to_datetime(supermag['Date_UTC'], format='%Y-%m-%d %H:%M:%S')
@@ -100,7 +90,10 @@ ax[3].plot(supermag.index, supermag.SMR, c='k', label='SMR')
 ax[3].set_ylabel('SMR [nT]')
 
 for ax_i in ax:
-    ax_i.axvline(elfin_times[0], ls='--', c='k')
+    if ax_i == ax[-1]:
+        ax_i.axvline(elfin_times[0], ls='--', c='w')
+    else:
+        ax_i.axvline(elfin_times[0], ls='--', c='k')
 for ax_i in ax[:-1]:
     # ax_i.get_xaxis().set_visible(False)
     ax_i.set_xticklabels([])
@@ -282,7 +275,7 @@ seven_re = plt.Circle((0, 0), 7, color='k', fill=None, ls='--')
 bx.add_patch(seven_re)
 
 bx.text(0.01, 0.98, f'     T89', fontsize=15, transform=bx.transAxes, va='top')
-cx.text(0.01, 0.98, f'    T89', fontsize=15, transform=cx.transAxes, va='top')
+cx.text(0.01, 0.98, f'     T89', fontsize=15, transform=cx.transAxes, va='top')
 
 bx.xaxis.set_visible(False)
 plt.suptitle(
