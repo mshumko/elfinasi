@@ -38,7 +38,7 @@ pad_energy = 63  # keV
 elfin_labels=(
     f'{pad_energy} keV spin-resolved flux',
     f'Omnidirectional $e^{{-}}$ number flux',
-    f'$j_{{||}}/j_\perp$',
+    f'$j_{{||}}/j_\perp$ ratio',
 )
 
 # sst19_file_path = elfinasi.data_dir / '20220904_0418_0424_elfina_mapping_sst19.txt'
@@ -197,7 +197,7 @@ _z = zip([bx, cx, dx], string.ascii_lowercase[len(ax):], elfin_labels)
 for _other_ax, letter_label, elfin_label in _z:  # Just need to run this loop once
     _text = _other_ax.text(
         0.01, 
-        0.99, 
+        0.97, 
         f'({letter_label}) {elfin_label}',
         va='top', 
         transform=_other_ax.transAxes, 
