@@ -38,7 +38,7 @@ pad_energy = 63  # keV
 elfin_labels=(
     f'{pad_energy} keV spin-resolved flux',
     f'Omnidirectional $e^{{-}}$ number flux',
-    'Loss cone filling ratio',
+    f'$j_{{||}}/j_\perp$',
 )
 
 # sst19_file_path = elfinasi.data_dir / '20220904_0418_0424_elfina_mapping_sst19.txt'
