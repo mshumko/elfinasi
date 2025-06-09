@@ -132,7 +132,8 @@ for i, (probe, _bmag_lim) in enumerate(zip(themis_probes, _bmag_lims)):
         rasterized=True
         )
     ax[3].set(yscale='log', ylabel='Energy [keV]')
-    plt.colorbar(p, ax=ax[3], label=f'Electron flux\n$[eV/(cm^{{2}} \ s \ sr \ eV)]$')
+    cbar = plt.colorbar(p, ax=ax[3])
+    cbar.set_label(f'Electron flux\n$[eV/(cm^{{2}} \ s \ sr \ eV)]$', y=0, ha='center')
 
     esa_spectra = pytplot.get_data('tha_peef_en_eflux', xarray=True)
     idx = np.where(~np.isnan(esa_spectra.spec_bins[0,:]))[0]
@@ -143,7 +144,7 @@ for i, (probe, _bmag_lim) in enumerate(zip(themis_probes, _bmag_lims)):
         norm=matplotlib.colors.LogNorm()
         )
     ax[4].set(yscale='log', ylabel='Energy [keV]')
-    plt.colorbar(p, ax=ax[4], label=f'Electron flux\n$[eV/(cm^{{2}} \ s \ sr \ eV)]$')
+    plt.colorbar(p, ax=ax[4])
 
     bw_xr = pytplot.get_data(f'th{probe}_{themis_Bw[i]}')
     p = ax[5].pcolormesh(
