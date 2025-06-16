@@ -8,10 +8,8 @@ Contains classes to load Electron Losses and Fields Investigation (ELFIN; https:
 
 ## Installation
 
-TODO: Update to install from github.
-
 ```shell
-$ python -m pip install git+https://github.com/mshumko/elfinasi.gitelfinasi
+$ python -m pip install git+https://github.com/mshumko/elfinasi.git
 ```
 
 To locally install in editable mode run
