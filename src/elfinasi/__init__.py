@@ -3,7 +3,7 @@ import pathlib
 import elfinasi.elfin as elfin
 from elfinasi.elfin import State, EPD, MagEphem, EPD_PAD, EPD_PAD_ARTEMYEV
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 # Create a data and plot directories the first time it runs.
 data_dir = pathlib.Path(elfin.__file__).parents[2] / 'data'

@@ -1,6 +1,6 @@
 [project]
 name = "elfinasi"
-version = "0.0.1"
+version = "0.0.2"
 description = "Load ELFIN L2 data and make pitch angle distributions (PADs), as well as auroral all-sky imagers (ASIs)."
 readme = "README.md"
 requires-python = ">=3.10"
