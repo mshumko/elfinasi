@@ -2,7 +2,7 @@
 
 Contains classes to load Electron Losses and Fields Investigation (ELFIN; https://elfin.igpp.ucla.edu/) L2 data, make pitch angle distributions (PADs), and well plot ELFIN above auroral all-sky imagers (ASIs).
 
-![ELFIN-B data showing an electron isotropy boundary](docs\20200902_1420_elfinb_example.png)
+![ELFIN-B data showing an electron isotropy boundary](https://github.com/mshumko/elfinasi/blob/d5a6ded9bbab9b9aca47693a47ee8cc7d5ec9cc1/docs/20200902_1420_elfinb_example.png)
 
 *Example ELFIN-B data showing an electron isotropy boundary, generated from the `test_pad_plot` test in `test_pad.py`. Event from [Wilkins+2023](https://doi.org/10.1029/2023JA031774).*
 
