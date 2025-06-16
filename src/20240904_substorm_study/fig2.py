@@ -45,9 +45,9 @@ _b_labels = (f'$B_{{x}}$', f'$B_{{y}}$', f'$B_{{z}}$', f'$|B|$')
 _colors = ('#1f77b4', '#ff7f0e', '#2ca02c', 'k')
 _line_styles = ('-', '-', '-', 'dashdot')
 _subplot_labels = (
-    'DC Magnetic Field',
-    'DC magnetic field inclination', 
-    'Ion Flows', 
+    'Magnetic Field',
+    'Magnetic Field Inclination', 
+    'Ion Flows',
     'Energetic Electrons', 
     'Low-energy Electrons',
     'Magnetic Field Waves',
