@@ -1,3 +1,5 @@
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15678426.svg)](https://doi.org/10.5281/zenodo.15678426)
+
 # elfinasi
 
 Contains classes to load Electron Losses and Fields Investigation (ELFIN; https://elfin.igpp.ucla.edu/) L2 data, make pitch angle distributions (PADs), and well plot ELFIN above auroral all-sky imagers (ASIs).
