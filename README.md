@@ -14,6 +14,7 @@ $ python -m pip install git+https://github.com/mshumko/elfinasi.git
 
 To locally install in editable mode run
 ```shell
+$ git clone git@github.com:mshumko/elfinasi.git
 $ cd elfinasi/
 $ python -m pip install -e .
 ```
