@@ -25,6 +25,7 @@ dependencies = [
     "cdasws>=1.8.4",
     "matplotlib>=3.7.1",
     "pyspedas>=1.7.0",
+    "netCDF4",
 ]
 
 [tool.setuptools]

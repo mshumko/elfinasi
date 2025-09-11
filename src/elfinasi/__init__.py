@@ -2,6 +2,7 @@ import pathlib
 
 import elfinasi.elfin as elfin
 from elfinasi.elfin import State, EPD, MagEphem, EPD_PAD, EPD_PAD_ARTEMYEV
+from elfinasi.poes import poes
 
 __version__ = '0.0.2'
 
