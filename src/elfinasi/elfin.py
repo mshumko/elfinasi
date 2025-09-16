@@ -873,7 +873,8 @@ class EPD_PAD:
         
     def plot_omni(
             self, 
-            ax:plt.Axes, 
+            ax:plt.Axes,
+            corrected_flux:np.ndarray=None, 
             flux:bool=True, 
             vmin:float=None, 
             vmax:float=None, 
@@ -891,6 +892,8 @@ class EPD_PAD:
         ----------
         ax: plt.Axes
             The subplot object to plot on.
+        corrected_flux: np.ndarray
+            Can use to override the spin-averaged fluxes.
         flux: bool
             Plot the counts or flux.
         vmin: float
@@ -902,20 +905,29 @@ class EPD_PAD:
         colorbar: bool
             Add a colorbar.
         """
-        if flux:
-            z = self.pad.mean(dim='pa', skipna=True).sel(energy=self._flux_keys).T
-            label=f"Electron Flux\n{self._flux_units}"
+        if corrected_flux is None:
+            if flux:
+                z = self.pad.mean(dim='pa', skipna=True).sel(energy=self._flux_keys).T
+                label=f"Electron Flux\n{self._flux_units}"
+            else:
+                z = self.pad.mean(dim='pa', skipna=True).sel(energy=self._counts_keys).T
+                label=self._counts_units
+
+            if np.prod(z.shape) != 0:
+                p = ax.pcolormesh(
+                    self.pad.time, self.energy, z,
+                    norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
+                    )
+            else:
+                warnings.warn('No valid omnidirectional fluxes.')
+                p = None
         else:
-            z = self.pad.mean(dim='pa', skipna=True).sel(energy=self._counts_keys).T
-            label=self._counts_units
-        if np.prod(z.shape) != 0:
+            z = corrected_flux
+            label = f"Electron Flux\n{self._flux_units}"
             p = ax.pcolormesh(
-                self.pad.time, self.energy, z,
+                z.index, z.columns, z.values.T,
                 norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
-                )
-        else:
-            warnings.warn('No valid omnidirectional fluxes.')
-            p = None
+            )
 
         if labels:
             ax.set(
