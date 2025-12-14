@@ -129,6 +129,8 @@ class State:
         return self.file_path
     
     def keys(self):
+        if hasattr(self.state_obj.cdf_info(), 'zVariables'):
+            return self.state_obj.cdf_info().zVariables
         return self.state_obj.cdf_info()['zVariables']
     
     def __getitem__(self, _slice):
@@ -447,10 +449,21 @@ class MagEphem:
         Load (and optionally download) the Kp index and resample it to times.
         """
         cdas = cdasws.CdasWs()
-        time_range = cdasws.TimeInterval(
-            times[0].replace(tzinfo=timezone.utc), 
-            times[-1].replace(tzinfo=timezone.utc)
-            )
+        try:
+            time_range = cdasws.TimeInterval(
+                times[0].replace(tzinfo=timezone.utc), 
+                times[-1].replace(tzinfo=timezone.utc)
+                )
+        except AttributeError as err:
+            if "'numpy.datetime64' object has no attribute 'replace'" in str(err):
+                times = pd.to_datetime(times).to_pydatetime()
+                time_range = cdasws.TimeInterval(
+                    times[0].replace(tzinfo=timezone.utc), 
+                    times[-1].replace(tzinfo=timezone.utc)
+                    )
+            else:
+                raise
+        print(times, time_range)
         _, data =  cdas.get_data(
             'OMNI2_H0_MRG1HR', ['KP1800'], time_range
             )
