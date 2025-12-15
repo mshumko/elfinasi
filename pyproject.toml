@@ -22,7 +22,7 @@ dependencies = [
     "aacgmv2>=2.6.3",
     "manylabels>=0.1.0",
     "cdflib==0.4.9",
-    "cdasws>=1.8.4",
+    "cdasws>=1.8.12",
     "matplotlib>=3.7.1",
     "pyspedas>=1.7.0",
     "netCDF4",

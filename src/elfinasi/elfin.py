@@ -414,8 +414,9 @@ class MagEphem:
         self.magephem = np.full((self.state['epoch'].shape[0], 2), np.nan)
 
         X = {f'x{j}': pos_j/Re for j, pos_j in enumerate(self.state[f'el{self.sc_id}_pos_gei'].T, start=1)}
-        X['time'] = self.state['epoch']
+        X['time'] = [dateutil.parser.parse(str(ti)) for ti in self.state['epoch']]
         maginput = {'Kp': self._get_kp(self.state['epoch'])}
+        print(X['time'])
         _magephem_dict = self.model.make_lstar(X, maginput=maginput)
         
         Lm = np.abs(np.array(_magephem_dict['Lm']))
@@ -424,14 +425,14 @@ class MagEphem:
 
         _coords_obj = IRBEM.Coords()
         alt_lat_lon = _coords_obj.transform(
-            self.state['epoch'], 
+            X['time'], 
             self.state[f'el{self.sc_id}_pos_gei']/Re, 
             5, 
             0
             )
         
         self.data = {
-            'epoch':self.state['epoch'],
+            'epoch':X['time'],
             'lm':Lm,
             'mlt':MLT,
             'pos_gei':self.state[f'el{self.sc_id}_pos_gei'],
@@ -463,13 +464,16 @@ class MagEphem:
                     )
             else:
                 raise
-        print(times, time_range)
         _, data =  cdas.get_data(
             'OMNI2_H0_MRG1HR', ['KP1800'], time_range
             )
-        if isinstance(data['KP'].Epoch.data, np.ndarray):
+        if isinstance(data['Epoch'][0], datetime):
+            pass  # The newest cdasws format.
+        elif isinstance(data['KP'].Epoch.data, np.ndarray):
+            # An old cdasws format.
             data['Epoch'] = data['KP'].Epoch.data
         else:
+            # An old cdasws format.
             data['Epoch'] = cdflib.cdfepoch.to_datetime(data['KP'].Epoch.data)
         kp = pd.DataFrame(index=data['Epoch'], data={'Kp': data['KP']})
         state_times = pd.DataFrame(index=times)
@@ -1030,7 +1034,7 @@ class EPD_PAD:
                 0.01, 0.99, f'{energy} keV', transform=ax.transAxes, va='top'
                 )
             _text.set_bbox(dict(facecolor='white', linewidth=0, pad=0.1, edgecolor='k'))
-            ax.set(ylim=(0, 180), facecolor='grey', ylabel=f'Pitch angle\n[$\circ$]')
+            ax.set(ylim=(0, 180), facecolor='grey', ylabel=f'Pitch angle\n[$\\circ$]')
             ax.set_yticks(np.arange(0, 181, 30))
 
         if lc_lines:
@@ -1095,7 +1099,7 @@ class EPD_PAD:
                 0.01, 0.99, f'{energy} keV', transform=ax.transAxes, va='top'
                 )
             _text.set_bbox(dict(facecolor='white', linewidth=0, pad=0.1, edgecolor='k'))
-            ax.set(ylim=(0, 180), facecolor='grey', ylabel=f'Pitch angle\n[$\circ$]')
+            ax.set(ylim=(0, 180), facecolor='grey', ylabel=f'Pitch angle\n[$\\circ$]')
             ax.set_yticks(np.arange(0, 181, 30))
 
         if lc_lines:
@@ -1227,7 +1231,7 @@ class EPD_PAD:
             _cbar.set_label(label='BLC/DLC ratio error', size=8)
         if labels:
             ax.set(ylabel='Energy\n[keV]', yscale='log', facecolor='grey')
-            ax.text(0.01, 0.98, f'$\sigma_{{BLC/DLC}}$', transform=ax.transAxes, va='top', fontsize=15, color='white')
+            ax.text(0.01, 0.98, f'$\\sigma_{{BLC/DLC}}$', transform=ax.transAxes, va='top', fontsize=15, color='white')
         return
 
 
@@ -1396,10 +1400,10 @@ class EPD_PAD:
             data={
                 'L [T89]':np.abs(self.state['lm']),
                 'MLT':self.state['mlt'],
-                f'$\lambda$ [$\circ$]':transformed_state.mlat,
+                f'$\\lambda$ [$\\circ$]':transformed_state.mlat,
                 'Alt [km]':transformed_state.alt,
-                f'Geo Lat [$\circ$]':transformed_state.lat,
-                f'Geo Lon [$\circ$]':transformed_state.lon
+                f'Geo Lat [$\\circ$]':transformed_state.lat,
+                f'Geo Lon [$\\circ$]':transformed_state.lon
                 }
         )
         manylabels.ManyLabels(ax, data)
@@ -1859,7 +1863,7 @@ class EPD_PAD_ARTEMYEV:
             _cbar.set_label(label='BLC/DLC ratio error', size=8)
         if labels:
             ax.set(ylabel='Energy\n[keV]', yscale='log', facecolor='grey')
-            ax.text(0.01, 0.98, f'$\sigma_{{BLC/DLC}}$', transform=ax.transAxes, va='top', fontsize=15, color='white')
+            ax.text(0.01, 0.98, f'$\\sigma_{{BLC/DLC}}$', transform=ax.transAxes, va='top', fontsize=15, color='white')
         return
     
     def plot_position(self, ax:plt.Axes):
@@ -1877,10 +1881,10 @@ class EPD_PAD_ARTEMYEV:
             data={
                 'L [T89]':np.abs(self.state['lm']),
                 'MLT':self.state['mlt'],
-                f'$\lambda$ [$\circ$]':transformed_state.mlat,
+                f'$\\lambda$ [$\\circ$]':transformed_state.mlat,
                 'Alt [km]':transformed_state.alt,
-                f'Geo Lat [$\circ$]':transformed_state.lat,
-                f'Geo Lon [$\circ$]':transformed_state.lon
+                f'Geo Lat [$\\circ$]':transformed_state.lat,
+                f'Geo Lon [$\\circ$]':transformed_state.lon
                 }
         )
         manylabels.ManyLabels(ax, data)
