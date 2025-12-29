@@ -365,10 +365,10 @@ class EPD:
 
 
 class MagEphem:
-    def __init__(self, sc_id, day, overwrite=False) -> None:
+    def __init__(self, sc_id, day, overwrite=False, t89=False) -> None:
         """
-        Load (and calculate if necessary) ELFIN's L-shell and MLT using the T89 magnetic field 
-        model. If calculating the magnetic field coordinates, the data is saved to hdf5 files
+        Load (and calculate if necessary) ELFIN's L-shell and MLT using the IGRF with or without the
+        T89 magnetic field model. If calculating the magnetic field coordinates, the data is saved to hdf5 files
         with the same name as the state files, with the exception that the word "state" is replaced
         by "magephem".
 
@@ -378,6 +378,7 @@ class MagEphem:
         self.sc_id = sc_id
         self.day = day
         self.overwrite = overwrite
+        self.t89 = t89
         self.state = State(self.sc_id, self.day)
 
         self.file_path = pathlib.Path(
@@ -410,13 +411,19 @@ class MagEphem:
         """
         Run the magnetic field model.
         """
-        self.model = IRBEM.MagFields(kext='T89', sysaxes=5)
+        if self.t89:
+            kext = 'T89'
+        else:
+            kext = 'None'
+        self.model = IRBEM.MagFields(kext=kext, sysaxes=5)
         self.magephem = np.full((self.state['epoch'].shape[0], 2), np.nan)
 
         X = {f'x{j}': pos_j/Re for j, pos_j in enumerate(self.state[f'el{self.sc_id}_pos_gei'].T, start=1)}
         X['time'] = [dateutil.parser.parse(str(ti)) for ti in self.state['epoch']]
-        maginput = {'Kp': self._get_kp(self.state['epoch'])}
-        print(X['time'])
+        if self.t89:
+            maginput = {'Kp': self._get_kp(self.state['epoch'])}
+        else:
+            maginput = {}
         _magephem_dict = self.model.make_lstar(X, maginput=maginput)
         
         Lm = np.abs(np.array(_magephem_dict['Lm']))
@@ -496,6 +503,7 @@ class EPD_PAD:
             min_counts:int=10,
             lc_exclusion_angle:float=10,
             nflux:bool=True,
+            t89:bool=False
             ) -> None:
         """
         Calculate the electron pitch angle distribution taken by ELFIN's EPD instrument.
@@ -609,6 +617,7 @@ class EPD_PAD:
         self.min_counts = min_counts
         self.lc_exclusion_angle = lc_exclusion_angle
         self.nflux = nflux
+        self.t89 = t89
         if self.nflux == True:
             self._flux_var = 'nflux'
         else:
@@ -625,7 +634,7 @@ class EPD_PAD:
 
         self.epd_l2 = EPD(self.sc_id, self.time_range[0], level=2)
         self.epd_l1 = EPD(self.sc_id, self.time_range[0], level=1)
-        self.state = MagEphem(self.sc_id, self.time_range[0])    
+        self.state = MagEphem(self.sc_id, self.time_range[0], t89=self.t89)    
         self.bin()
         self.precipitation_components()
 
@@ -1489,7 +1498,7 @@ class EPD_PAD:
     
 
 class EPD_PAD_ARTEMYEV:
-    def __init__(self, sc_id, time_range, min_counts=None, lc_exclusion_angle:float=10):
+    def __init__(self, sc_id, time_range, min_counts=None, lc_exclusion_angle:float=10, t89:bool=False):
         """
         Load the EPD ion data that Anton provided.
 
@@ -1523,6 +1532,7 @@ class EPD_PAD_ARTEMYEV:
         self.time_range = validate_time_range(time_range)
         self.min_counts = min_counts
         self.lc_exclusion_angle = lc_exclusion_angle
+        self.t89 = t89
                 
         file_dir = pathlib.Path(elfinasi.data_dir)
         
@@ -1541,7 +1551,7 @@ class EPD_PAD_ARTEMYEV:
         self.flux = self._load_artemyev_file(flux_file_path)
         self.flux['flux'] = self.flux.pop('counts')  # Rename key to be consistant.
         self.epd_l2 = EPD(self.sc_id, self.time_range[0], level=2)
-        self.state = MagEphem(self.sc_id, self.time_range[0])
+        self.state = MagEphem(self.sc_id, self.time_range[0], t89=self.t89)
 
         self.energy = self.flux['energy']
         self._energy_units = 'keV'
