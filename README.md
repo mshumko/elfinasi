@@ -8,6 +8,9 @@ Contains classes to load Electron Losses and Fields Investigation (ELFIN; https:
 
 *Example ELFIN-B data showing an electron isotropy boundary, generated from the `test_pad_plot` test in `test_pad.py`. Event from [Wilkins+2023](https://doi.org/10.1029/2023JA031774).*
 
+> **_2026-01-13 NOTE:_** I've discovered an inconsistency in ELFIN's epoch parsing between python versions 3.13 and 3.14. For now use python 3.13 with numpy==2.2.6 and cdflib==1.3.8 to correctly parse the epochs. The issue is obvious if you look at the inconsistent years coming out of `cdflib.cdfepoch.to_datetime()`.
+
+
 ## Installation
 
 ```shell
