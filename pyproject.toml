@@ -7,9 +7,9 @@ requires-python = ">=3.10"
 authors = [
   { name = "Mykhaylo Shumko", email = "mike.shumko@jhuapl.edu" },
 ]
-license = { text = "GNU General Public License v3 (GPLv3)" }
+license-files = ["LICENSE*"]
 classifiers = [
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Programming Language :: Python :: 3",
 ]
 dependencies = [
     "pytest-cov>=6.0.0",
@@ -29,9 +29,6 @@ dependencies = [
     "setuptools",
     "wheel",
 ]
-
-[tool.setuptools]
-license-files = ["LICENSE"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
