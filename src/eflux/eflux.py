@@ -18,8 +18,8 @@ events = [
     {
         'time_range':('2022-09-04T04:18:00', '2022-09-04T04:23:00'),
         'sc_id':'A',
-        'location_codes':('ATHA', 'PINA', 'GILL', 'RABB', 'LUCK'),
-        'array':asilib.asi.trex_rgb,
+        'location_codes':('PINA', 'GILL', 'TPAS', 'KAPU'),
+        'array':asilib.asi.themis,
     },
 ]
 
@@ -107,7 +107,7 @@ for event in events:
         left=0.03, 
         right=0.95, 
         bottom=0.20, 
-        top=0.97,
+        top=0.95,
         hspace=0.1,
         height_ratios=(0.75, 1)
         )
@@ -125,13 +125,13 @@ for event in events:
         )
     
     asis = asilib.Imagers(
-            [event['array'](location_code=location_code, time_range=event['time_range'], alt=alt) 
-            for location_code in event['location_codes']]
-            )
+        [event['array'](location_code=location_code, time_range=event['time_range'], alt=alt) 
+        for location_code in event['location_codes']]
+        )
 
     ax = [
         asilib.map.create_map(
-            lon_bounds=asis.lon_bounds, 
+            lon_bounds=(np.mean(asis.lon_bounds)-10, np.mean(asis.lon_bounds)+10), 
             lat_bounds=asis.lat_bounds, 
             fig_ax=(fig, top_gs[0, i]), 
             land_color='grey'
@@ -150,6 +150,8 @@ for event in events:
             [event['array'](location_code=location_code, time=time, alt=alt) 
             for location_code in event['location_codes']]
             )
+        for _imager in asis.imagers:
+            _imager.set_color_bounds(*_imager.auto_color_bounds())
         # vmin = min([_imager.get_color_bounds()[0] for _imager in asis.imagers])
         # vmax = max([_imager.get_color_bounds()[1] for _imager in asis.imagers])
         asis.plot_map(
@@ -167,22 +169,12 @@ for event in events:
             transform=ccrs.PlateCarree(),
             label=f'ELFIN-{event["sc_id"].upper()}'
             )
-        ax_i.text(
+        _text=ax_i.text(
             0.01, 0.99, f'({_label}) {time:%H:%M:%S}', va='top', transform=ax_i.transAxes, fontsize=12
             )
+        _text.set_bbox(dict(facecolor='white', linewidth=0, pad=0.1, edgecolor='k'))
 
     ax[0].legend(loc='lower left', ncols=2, columnspacing=0.1, handletextpad=0.1, fontsize=8)
-
-    # Connect the subplots and add vertical lines to cx and dx.
-    for ax_i, image_time_numeric in zip(ax, matplotlib.dates.date2num(image_times)):
-        line = matplotlib.patches.ConnectionPatch(
-            xyA=(0.5, 0), coordsA=ax_i.transAxes,
-            xyB=(image_time_numeric, bx[0].get_ylim()[1]), coordsB=bx[0].transData, 
-            ls='--')
-        ax_i.add_artist(line)
-
-        for _other_ax in bx:
-            _other_ax.axvline(image_time_numeric, c='k', ls='--', alpha=1)
 
     for bx_i in bx[:-1]:
         bx_i.get_xaxis().set_visible(False)
@@ -232,8 +224,19 @@ for event in events:
     #                )
     # )
 
-    for ax_i, label, letter in zip(bx, labels, string.ascii_lowercase):
-        _text = ax_i.text(0.01, 0.99, f'({letter}) {label}', transform=ax_i.transAxes, va='top')
+    # Connect the subplots and add vertical lines to cx and dx.
+    for ax_i, image_time_numeric in zip(ax, matplotlib.dates.date2num(image_times)):
+        line = matplotlib.patches.ConnectionPatch(
+            xyA=(0.5, 0), coordsA=ax_i.transAxes,
+            xyB=(image_time_numeric, bx[0].get_ylim()[1]), coordsB=bx[0].transData, 
+            ls='--')
+        ax_i.add_artist(line)
+
+        for _other_ax in bx:
+            _other_ax.axvline(image_time_numeric, c='k', ls='--', alpha=1)
+
+    for ax_i, label, letter in zip(bx, labels, string.ascii_lowercase[len(ax):]):
+        _text = ax_i.text(0.01, 0.99, f'({letter}) {label}', transform=ax_i.transAxes, va='top', fontsize=12)
         _text.set_bbox(dict(facecolor='white', linewidth=0, pad=0.1, edgecolor='k'))
 
     pad_obj_eflux.plot_position(bx[-1])
