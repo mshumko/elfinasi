@@ -7,20 +7,32 @@ from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
 import matplotlib.colors
 import numpy as np
 import pandas as pd
-
+import asilib.asi
+import asilib.map
+import cartopy.crs as ccrs
 
 import elfinasi
+from elfinasi import map_elfin
 
 events = [
     {
         'time_range':('2022-09-04T04:18:00', '2022-09-04T04:23:00'),
         'sc_id':'A',
         'location_codes':('ATHA', 'PINA', 'GILL', 'RABB', 'LUCK'),
+        'array':asilib.asi.trex_rgb,
     },
 ]
 
 kev_erg_factor = 1.6E-9  # The conversion factor from KeV to ergs.
 precipitation_solid_angle = 2*np.pi
+alt=110
+n_images = 4
+
+labels = (
+        'ELFIN Differential Q', 
+        f'Q along ELFIN track', 
+        f'$Q_{{>50 \\ \\mathrm{{keV}}}}/(Q_{{>50 \\ \\mathrm{{keV}}}} + Q_{{\\mathrm{{ASI}}}})$'
+        )
 
 
 def load_gabrielse_data(path):
@@ -50,6 +62,7 @@ def load_gabrielse_data(path):
     return themis_asi_eflux
 
 for event in events:
+    image_times = pd.date_range(event['time_range'][0], event['time_range'][1], periods=n_images+2)[1:-1]
     pad_obj_eflux = elfinasi.EPD_PAD(
         event['sc_id'], 
         event['time_range'], 
@@ -60,6 +73,10 @@ for event in events:
         lc_exclusion_angle=0, 
         nflux=False
     )
+    transformed_state = pad_obj_eflux.transform_state()
+    transformed_state = transformed_state.loc[event['time_range'][0]:event['time_range'][1]]
+    mapped_state = map_elfin(transformed_state, alt=alt)
+
     _date = dateutil.parser.parse(event['time_range'][0]).strftime('%Y%m%d')
     themis_asi_eflux = load_gabrielse_data(elfinasi.data_dir / f'{_date}_themis_asi_inversion' / 'ASIdataCSV0.csv')
 
@@ -77,9 +94,99 @@ for event in events:
         direction='nearest', 
         tolerance=pd.Timedelta('1s')
         )
+    
     merged_eflux['energetic_contribution'] = 100*merged_eflux['energetic']/(merged_eflux['auroral'] + merged_eflux['energetic'])
 
-    fig, bx = plt.subplots(3, 1, sharex=True, figsize=(8, 6))
+    fig = plt.figure(figsize=(9, 7.5))
+    # Add a gridspec with two rows and two columns and a ratio of 1 to 4 between
+    # the size of the marginal Axes and the main Axes in both directions.
+    # Also adjust the subplot parameters for a square plot.
+    outer_gridspec = fig.add_gridspec(
+        2, 
+        1,
+        left=0.03, 
+        right=0.95, 
+        bottom=0.20, 
+        top=0.97,
+        hspace=0.1,
+        height_ratios=(0.75, 1)
+        )
+    top_gs = matplotlib.gridspec.GridSpecFromSubplotSpec(
+        1, 
+        len(image_times), 
+        subplot_spec=outer_gridspec[0, 0],
+        wspace=0.02
+        )
+    bottom_gs = matplotlib.gridspec.GridSpecFromSubplotSpec(
+        len(labels), 
+        10, 
+        subplot_spec=outer_gridspec[1, 0], 
+        hspace=0.05,
+        )
+    
+    asis = asilib.Imagers(
+            [event['array'](location_code=location_code, time_range=event['time_range'], alt=alt) 
+            for location_code in event['location_codes']]
+            )
+
+    ax = [
+        asilib.map.create_map(
+            lon_bounds=asis.lon_bounds, 
+            lat_bounds=asis.lat_bounds, 
+            fig_ax=(fig, top_gs[0, i]), 
+            land_color='grey'
+            ) for i in range(top_gs.ncols)
+        ]
+    bx = [None]*len(labels)
+    bx[0] = fig.add_subplot(bottom_gs[0, 1:])
+    for i in range(1, len(labels)):
+        bx[i] = fig.add_subplot(bottom_gs[i, 1:], sharex=bx[0])
+    # bx[1] = fig.add_subplot(bottom_gs[1, 1:], sharex=bx[0])
+    # bx[2] = fig.add_subplot(bottom_gs[2, 1:], sharex=bx[1])
+    # fig, bx = plt.subplots(3, 1, sharex=True, figsize=(8, 6))
+
+    for time, ax_i, _label in zip(image_times, ax, string.ascii_lowercase):
+        asis = asilib.Imagers(
+            [event['array'](location_code=location_code, time=time, alt=alt) 
+            for location_code in event['location_codes']]
+            )
+        # vmin = min([_imager.get_color_bounds()[0] for _imager in asis.imagers])
+        # vmax = max([_imager.get_color_bounds()[1] for _imager in asis.imagers])
+        asis.plot_map(
+            ax=ax_i, 
+            min_elevation=10, 
+            pcolormesh_kwargs={'rasterized':True}, 
+            asi_label=True, 
+            )
+        ax_i.plot(mapped_state['lon'], mapped_state['lat'], c='r', transform=ccrs.PlateCarree())
+        ax_i.scatter(
+            mapped_state.loc[time, 'lon'], 
+            mapped_state.loc[time, 'lat'], 
+            c='r', 
+            s=30,
+            transform=ccrs.PlateCarree(),
+            label=f'ELFIN-{event["sc_id"].upper()}'
+            )
+        ax_i.text(
+            0.01, 0.99, f'({_label}) {time:%H:%M:%S}', va='top', transform=ax_i.transAxes, fontsize=12
+            )
+
+    ax[0].legend(loc='lower left', ncols=2, columnspacing=0.1, handletextpad=0.1, fontsize=8)
+
+    # Connect the subplots and add vertical lines to cx and dx.
+    for ax_i, image_time_numeric in zip(ax, matplotlib.dates.date2num(image_times)):
+        line = matplotlib.patches.ConnectionPatch(
+            xyA=(0.5, 0), coordsA=ax_i.transAxes,
+            xyB=(image_time_numeric, bx[0].get_ylim()[1]), coordsB=bx[0].transData, 
+            ls='--')
+        ax_i.add_artist(line)
+
+        for _other_ax in bx:
+            _other_ax.axvline(image_time_numeric, c='k', ls='--', alpha=1)
+
+    for bx_i in bx[:-1]:
+        bx_i.get_xaxis().set_visible(False)
+
     pad_obj_eflux.plot_omni(bx[0], labels=True, colorbar=True, vmin=1E2, vmax=1E9, pretty_plot=False, fraction=0.05)
     bx[1].plot(
         merged_eflux.index, 
@@ -102,7 +209,7 @@ for event in events:
     bx[-1].xaxis.set_label_coords(-0.04, -0.007*7)
     bx[-1].xaxis.label.set_size(10)
 
-    for bx_i in bx[[1, 2]]:
+    for bx_i in bx[1:]:
         divider = make_axes_locatable(bx_i)
         cax = divider.append_axes("right", size="10%", pad=0.08)
         cax.remove()
@@ -125,14 +232,14 @@ for event in events:
     #                )
     # )
 
-    labels = (
-        'ELFIN Differential Q', 
-        f'Q along ELFIN track', 
-        f'$Q_{{>50 \\ \\mathrm{{keV}}}}/(Q_{{>50 \\ \\mathrm{{keV}}}} + Q_{{\\mathrm{{ASI}}}})$'
-        )
     for ax_i, label, letter in zip(bx, labels, string.ascii_lowercase):
         _text = ax_i.text(0.01, 0.99, f'({letter}) {label}', transform=ax_i.transAxes, va='top')
         _text.set_bbox(dict(facecolor='white', linewidth=0, pad=0.1, edgecolor='k'))
+
+    pad_obj_eflux.plot_position(bx[-1])
+    bx[-1].xaxis.set_major_locator(plt.MaxNLocator(7))
+    bx[-1].xaxis.set_label_coords(-0.07, -0.007*7)
+    bx[-1].xaxis.label.set_size(9)
     plt.suptitle(f'ELFIN-{event["sc_id"].upper()} - THEMIS ASI Electron Flux Comparison', fontsize=14)
     plt.tight_layout()
     plt.show()

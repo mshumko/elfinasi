@@ -1945,6 +1945,33 @@ class EPD_PAD_ARTEMYEV:
             np.nanmean(self.counts['counts'][idt, dlc_idx, :])
         return
 
+
+def map_elfin(df, alt=110, hemi_flag=0):
+    """
+    Map ELFIN's location along the magnetic field line to alt using IRBEM.MagFields.find_foot_print.
+
+    Parameters
+    ----------
+    alt: float
+        The mapping altitude in units of kilometers
+    hemi_flag: int
+        What direction to trace the field line: 
+        0 = same magnetic hemisphere as starting point
+        +1   = northern magnetic hemisphere
+        -1   = southern magnetic hemisphere
+        +2   = opposite magnetic hemisphere as starting point
+    """
+    m = IRBEM.MagFields(kext='T89')
+    _all = np.zeros_like(df.loc[:, ['alt', 'lat', 'lon']])
+
+    for i, (time, row) in enumerate(df.iterrows()):
+        X = {'Time':time, 'x1':row['alt'], 'x2':row['lat'], 'x3':row['lon']}
+        _all[i, :] = m.find_foot_point(X, {'Kp':56}, alt, hemi_flag)['XFOOT']
+    _all[_all == -1E31] = np.nan
+    mapped_df = df.copy()
+    mapped_df.loc[:, ['alt', 'lat', 'lon']] = _all
+    return mapped_df
+
 if __name__ == '__main__':
     import string
 
