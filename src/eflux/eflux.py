@@ -2,10 +2,9 @@ import string
 import dateutil.parser
 import warnings
 
-import matplotlib.transforms
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
-import matplotlib.colors
+import matplotlib.dates
 import numpy as np
 import pandas as pd
 import asilib.asi
@@ -34,6 +33,12 @@ events = [
         'location_codes':('PINA', 'GILL'),  # Can also add 'RABB', but it was partly cloudy.
         'array':asilib.asi.trex_rgb,
     },
+    {
+        'time_range':('2021/09/28 04:46', '2021/09/28 04:52'),
+        'sc_id':'A',
+        'location_codes':('PINA', 'GILL'),  # Can also add 'RABB', but it was partly cloudy.
+        'array':asilib.asi.trex_rgb,
+    }
 ]
 
 kev_erg_factor = 1.6E-9  # The conversion factor from KeV to ergs.
@@ -257,7 +262,13 @@ for event in events:
     bx[-1].xaxis.set_major_locator(plt.MaxNLocator(7))
     bx[-1].xaxis.set_label_coords(-0.07, -0.007*7)
     bx[-1].xaxis.label.set_size(9)
-    plt.suptitle(f'ELFIN-{event["sc_id"].upper()} - THEMIS ASI Electron Flux Comparison', fontsize=14)
+    plt.suptitle(
+        f'{dateutil.parser.parse(event["time_range"][0]).strftime("%Y-%m-%d %H:%M")}-'
+        f'{dateutil.parser.parse(event["time_range"][1]).strftime("%H:%M")} | '
+        f'ELFIN-{event["sc_id"].upper()} - THEMIS ASI | '
+        f'Electron Flux Comparison', 
+        fontsize=14
+        )
     plt.tight_layout()
     file_name = (
         f'{dateutil.parser.parse(event["time_range"][0]).strftime("%Y%m%d_%H%M")}_'
@@ -265,4 +276,35 @@ for event in events:
         f'elfin{event["sc_id"].lower()}_themisasi_eflux_comparison')
     for ext in ['png', 'pdf']:
         plt.savefig(elfinasi.plot_dir / 'eflux' / f'{file_name}.{ext}', dpi=300)
-    # plt.show()
+    
+    plt.close()
+    for location_code in event['location_codes']:
+        time_range = (
+            pd.to_datetime(event['time_range'][0])-pd.Timedelta(minutes=30), 
+            pd.to_datetime(event['time_range'][1])+pd.Timedelta(minutes=30)
+        )
+        asi = event['array'](location_code=location_code, time_range=time_range, alt=alt)
+        fig, ax = plt.subplots(figsize=(10, 5))
+        asi.plot_keogram(
+            ax=ax, 
+            minimum_elevation=10, 
+            pcolormesh_kwargs={'rasterized':True},
+            aacgm=True
+            )
+        ax.set_ylabel('AACGM Latitude [deg]')
+        ax.set_xlabel('Time [HH:MM]')
+        time_form = matplotlib.dates.DateFormatter("%H:%M")
+        ax.xaxis.set_major_formatter(time_form)
+        ax.axvspan(
+            pd.to_datetime(event['time_range'][0]), 
+            pd.to_datetime(event['time_range'][1]), 
+            color='red', 
+            alpha=0.3
+            )
+        ax.set_title(f'{time_range[0]:%Y-%m-%d %H:%M}-{time_range[1]:%H:%M} {asi.meta["location"].upper()} Keogram')
+        file_name = (
+            f'{time_range[0]:%Y%m%d_%H%M}_'
+            f'{time_range[1]:%H%M}_'
+            f'elfin{event["sc_id"].lower()}_{location_code.lower()}_keogram')
+        for ext in ['png', 'pdf']:
+            plt.savefig(elfinasi.plot_dir / 'eflux' / f'{file_name}.{ext}', dpi=300)
