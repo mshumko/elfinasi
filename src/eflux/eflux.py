@@ -1,5 +1,6 @@
 import string
 import dateutil.parser
+import warnings
 
 import matplotlib.transforms
 import matplotlib.pyplot as plt
@@ -20,6 +21,18 @@ events = [
         'sc_id':'A',
         'location_codes':('PINA', 'GILL', 'TPAS', 'KAPU'),
         'array':asilib.asi.themis,
+    },
+    {
+        'time_range':('2021/08/31 06:04', '2021/08/31 06:10'),
+        'sc_id':'B',
+        'location_codes':('PINA', 'GILL'),  # Can also add 'RABB', but it was partly cloudy.
+        'array':asilib.asi.trex_rgb,
+    },
+    {
+        'time_range':('2021/08/31 06:04', '2021/08/31 06:10'),
+        'sc_id':'A',
+        'location_codes':('PINA', 'GILL'),  # Can also add 'RABB', but it was partly cloudy.
+        'array':asilib.asi.trex_rgb,
     },
 ]
 
@@ -78,24 +91,37 @@ for event in events:
     mapped_state = map_elfin(transformed_state, alt=alt)
 
     _date = dateutil.parser.parse(event['time_range'][0]).strftime('%Y%m%d')
-    themis_asi_eflux = load_gabrielse_data(elfinasi.data_dir / f'{_date}_themis_asi_inversion' / 'ASIdataCSV0.csv')
+    if not (elfinasi.data_dir / f'{_date}_themis_asi_inversion' / 'ASIdataCSV0.csv').exists():
+        warnings.warn(f"Could not find THEMIS ASI inversion data for {event['time_range'][0][:10]}.")
+        inversion_data_loaded = False
+    else:
+        themis_asi_eflux = load_gabrielse_data(elfinasi.data_dir / f'{_date}_themis_asi_inversion' / 'ASIdataCSV0.csv')
+        inversion_data_loaded = True
 
     energy_widths_mev = (pad_obj_eflux.energy_widths[:, 1]-pad_obj_eflux.energy_widths[:, 0])/1E3
     eflux_ergs = kev_erg_factor*precipitation_solid_angle*(pad_obj_eflux.blc - pad_obj_eflux.ablc)*energy_widths_mev
     relativistic_eflux = np.nansum(eflux_ergs, axis=1)
     elfin_eflux = pd.DataFrame(relativistic_eflux, index=pad_obj_eflux.pad.time.astype('datetime64[ms]'), columns=['energetic'])
-    auroral_eflux = pd.DataFrame(themis_asi_eflux['ELFINeflux [erg/cm^2/s]']).rename(columns={'ELFINeflux [erg/cm^2/s]':'auroral'})
 
-    merged_eflux = pd.merge_asof(
-        elfin_eflux, 
-        auroral_eflux, 
-        left_index=True, 
-        right_index=True, 
-        direction='nearest', 
-        tolerance=pd.Timedelta('1s')
-        )
-    
-    merged_eflux['energetic_contribution'] = 100*merged_eflux['energetic']/(merged_eflux['auroral'] + merged_eflux['energetic'])
+    if inversion_data_loaded:
+        auroral_eflux = pd.DataFrame(
+            themis_asi_eflux['ELFINeflux [erg/cm^2/s]']
+            ).rename(columns={'ELFINeflux [erg/cm^2/s]':'auroral'})
+
+        merged_eflux = pd.merge_asof(
+            elfin_eflux, 
+            auroral_eflux, 
+            left_index=True, 
+            right_index=True, 
+            direction='nearest', 
+            tolerance=pd.Timedelta('1s')
+            )
+        
+        merged_eflux['energetic_contribution'] = 100*merged_eflux['energetic']/(merged_eflux['auroral'] + merged_eflux['energetic'])
+    else:
+        merged_eflux = elfin_eflux.copy()
+        merged_eflux['auroral'] = np.nan
+        merged_eflux['energetic_contribution'] = np.nan
 
     fig = plt.figure(figsize=(9, 7.5))
     # Add a gridspec with two rows and two columns and a ratio of 1 to 4 between
@@ -141,9 +167,6 @@ for event in events:
     bx[0] = fig.add_subplot(bottom_gs[0, 1:])
     for i in range(1, len(labels)):
         bx[i] = fig.add_subplot(bottom_gs[i, 1:], sharex=bx[0])
-    # bx[1] = fig.add_subplot(bottom_gs[1, 1:], sharex=bx[0])
-    # bx[2] = fig.add_subplot(bottom_gs[2, 1:], sharex=bx[1])
-    # fig, bx = plt.subplots(3, 1, sharex=True, figsize=(8, 6))
 
     for time, ax_i, _label in zip(image_times, ax, string.ascii_lowercase):
         asis = asilib.Imagers(
@@ -214,15 +237,6 @@ for event in events:
     bx[2].set_ylabel(f'Percentage')
     bx[2].set_ylim(0, 1E2)
     bx[2].axhline(50, color='k', linestyle='--')
-    # bx[2].text(0.98, 
-    #            51, 
-    #            f'$Q_{{>50 \\ \\mathrm{{keV}}}} and Q_{{\\mathrm{{ASI}}}}$ equal',
-    #            ha='right',
-    #            va='bottom',
-    #            transform=matplotlib.transforms.blended_transform_factory(
-    #                bx[2].transAxes, bx[2].transData
-    #                )
-    # )
 
     # Connect the subplots and add vertical lines to cx and dx.
     for ax_i, image_time_numeric in zip(ax, matplotlib.dates.date2num(image_times)):
@@ -245,4 +259,10 @@ for event in events:
     bx[-1].xaxis.label.set_size(9)
     plt.suptitle(f'ELFIN-{event["sc_id"].upper()} - THEMIS ASI Electron Flux Comparison', fontsize=14)
     plt.tight_layout()
-    plt.show()
+    file_name = (
+        f'{dateutil.parser.parse(event["time_range"][0]).strftime("%Y%m%d_%H%M")}_'
+        f'{dateutil.parser.parse(event["time_range"][1]).strftime("%H%M")}_'
+        f'elfin{event["sc_id"].lower()}_themisasi_eflux_comparison')
+    for ext in ['png', 'pdf']:
+        plt.savefig(elfinasi.plot_dir / 'eflux' / f'{file_name}.{ext}', dpi=300)
+    # plt.show()
