@@ -21,7 +21,7 @@ events = [
         'sc_id':'a',
         'location_codes':('KUUJ',),
         'array':asilib.asi.themis,
-    }
+    },
     {
         'time_range':('2022-09-04T04:18:00', '2022-09-04T04:23:00'),
         'sc_id':'A',
