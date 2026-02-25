@@ -22,6 +22,12 @@ events = [
         'array':asilib.asi.themis,
     },
     {
+        'time_range':('2022-09-04T04:18:00', '2022-09-04T04:23:00'),
+        'sc_id':'A',
+        'location_codes':('PINA', 'GILL', 'LUCK', 'RABB', 'ATHA'),
+        'array':asilib.asi.trex_rgb,
+    },
+    {
         'time_range':('2021/08/31 06:04', '2021/08/31 06:10'),
         'sc_id':'B',
         'location_codes':('PINA', 'GILL'),  # Can also add 'RABB', but it was partly cloudy.
@@ -47,7 +53,8 @@ alt=110
 n_images = 4
 
 labels = (
-        'ELFIN Differential Q', 
+        'Differential $Q_{{>50 \\ \\mathrm{{keV}}}}$',
+        f'$j_{{||}}/j_\\perp$ ratio',
         f'Q along ELFIN track', 
         f'$Q_{{>50 \\ \\mathrm{{keV}}}}/(Q_{{>50 \\ \\mathrm{{keV}}}} + Q_{{\\mathrm{{ASI}}}})$'
         )
@@ -128,7 +135,7 @@ for event in events:
         merged_eflux['auroral'] = np.nan
         merged_eflux['energetic_contribution'] = np.nan
 
-    fig = plt.figure(figsize=(9, 7.5))
+    fig = plt.figure(figsize=(9, 8.5))
     # Add a gridspec with two rows and two columns and a ratio of 1 to 4 between
     # the size of the marginal Axes and the main Axes in both directions.
     # Also adjust the subplot parameters for a square plot.
@@ -208,40 +215,43 @@ for event in events:
         bx_i.get_xaxis().set_visible(False)
 
     pad_obj_eflux.plot_omni(bx[0], labels=True, colorbar=True, vmin=1E2, vmax=1E9, pretty_plot=False, fraction=0.05)
-    bx[1].plot(
+    p, _ = pad_obj_eflux.plot_blc_dlc_ratio(bx[1], labels=True, colorbar=False, vmin=3E-1, vmax=1.2)
+    _cbar = plt.colorbar(p, ax=bx[1], shrink=0.9, fraction=0.05, pad=0.01)
+    _cbar.set_label(label=f'$j_{{||}}/j_{{\\perp}}$', size=12)
+    bx[2].plot(
         merged_eflux.index, 
         merged_eflux['energetic'], 
         label='$Q_{{>50 \\ \\mathrm{{keV}}}}$', 
         color='r', 
         linestyle='--'
         )
-    bx[1].plot(
+    bx[2].plot(
         merged_eflux.index, 
         merged_eflux['auroral'], 
         label=f'$Q_{{\\mathrm{{ASI}}}}$', 
         color='k'
         )
-    bx[1].legend(loc='upper right', fontsize=10)
+    bx[2].legend(loc='upper right', fontsize=10)
 
-    bx[2].plot(merged_eflux.index, merged_eflux['energetic_contribution'], color='k')
+    bx[3].plot(merged_eflux.index, merged_eflux['energetic_contribution'], color='k')
     pad_obj_eflux.plot_position(bx[-1])
     bx[-1].xaxis.set_major_locator(plt.MaxNLocator(7))
     bx[-1].xaxis.set_label_coords(-0.04, -0.007*7)
     bx[-1].xaxis.label.set_size(10)
 
-    for bx_i in bx[1:]:
+    for bx_i in bx[2:]:
         divider = make_axes_locatable(bx_i)
         cax = divider.append_axes("right", size="10%", pad=0.08)
         cax.remove()
 
-    bx[1].set_yscale('log')
-    bx[1].set_ylabel(f'Energy Flux\n$[ergs/cm^{{2}}s]$')
-    bx[1].set_yticks([1E-2, 1E-1, 1E0, 1E1])
-    bx[1].set_ylim(1E-3, 1E2)
+    bx[2].set_yscale('log')
+    bx[2].set_ylabel(f'Energy Flux\n$[ergs/cm^{{2}}s]$')
+    bx[2].set_yticks([1E-2, 1E-1, 1E0, 1E1])
+    bx[2].set_ylim(1E-3, 1E2)
 
-    bx[2].set_ylabel(f'Percentage')
-    bx[2].set_ylim(0, 1E2)
-    bx[2].axhline(50, color='k', linestyle='--')
+    bx[3].set_ylabel(f'Percentage')
+    bx[3].set_ylim(0, 1E2)
+    bx[3].axhline(50, color='k', linestyle='--')
 
     # Connect the subplots and add vertical lines to cx and dx.
     for ax_i, image_time_numeric in zip(ax, matplotlib.dates.date2num(image_times)):
@@ -265,7 +275,7 @@ for event in events:
     plt.suptitle(
         f'{dateutil.parser.parse(event["time_range"][0]).strftime("%Y-%m-%d %H:%M")}-'
         f'{dateutil.parser.parse(event["time_range"][1]).strftime("%H:%M")} | '
-        f'ELFIN-{event["sc_id"].upper()} - THEMIS ASI | '
+        f'ELFIN-{event["sc_id"].upper()} - {asis.imagers[0].meta["array"].upper()} ASI | '
         f'Electron Flux Comparison', 
         fontsize=14
         )
@@ -273,7 +283,7 @@ for event in events:
     file_name = (
         f'{dateutil.parser.parse(event["time_range"][0]).strftime("%Y%m%d_%H%M")}_'
         f'{dateutil.parser.parse(event["time_range"][1]).strftime("%H%M")}_'
-        f'elfin{event["sc_id"].lower()}_themisasi_eflux_comparison')
+        f'elfin{event["sc_id"].lower()}_{asis.imagers[0].meta["array"].lower()}_eflux_comparison')
     for ext in ['png', 'pdf']:
         plt.savefig(elfinasi.plot_dir / 'eflux' / f'{file_name}.{ext}', dpi=300)
     
