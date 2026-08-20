@@ -11,7 +11,7 @@ import cartopy.crs as ccrs
 import numpy as np
 
 import elfinasi
-from .map import map_elfin, map_themis
+from map import map_elfin, map_themis
 
 
 time_range = ('2022-09-04T04:17:00', '2022-09-04T04:24:00')
@@ -21,7 +21,7 @@ plot_times = (
     datetime(2022, 9, 4, 4, 21, 24),
     datetime(2022, 9, 4, 4, 22, 22)
 )
-location_codes = ('ATHA', 'PINA', 'GILL', 'RABB', 'LUCK')
+location_codes = ('ATHA', 'PINA', 'TPAS', 'GILL', 'KAPU')
 themis_probe = 'a'
 elfin_probe='a'
 alt=110
@@ -88,7 +88,7 @@ _cbar.set_label(label=pad_obj_eflux._flux_units, size=8)
 
 p, _ = pad_obj_nflux.plot_blc_dlc_ratio(dx, labels=True, colorbar=False, vmin=1E-2, vmax=1)
 _cbar = plt.colorbar(p, ax=dx, shrink=0.9, fraction=0.05, pad=0.01)
-_cbar.set_label(label=f'$j_{{||}}/j_{{\perp}}$', size=10)
+_cbar.set_label(label=f'$j_{{||}}/j_{{\\perp}}$', size=10)
 
 ex.plot(pad_obj_eflux.pad.time, relativistic_eflux, color='k', label=f'>50 keV')
 ex.set(
@@ -108,7 +108,7 @@ mapped_state = map_elfin(transformed_state, alt=alt)
 
 for time, ax_i, _label in zip(plot_times, ax, string.ascii_lowercase):
     asis = asilib.Imagers(
-        [asilib.asi.trex_rgb(location_code=location_code, time=time, alt=alt) 
+        [asilib.asi.themis(location_code=location_code, time=time, alt=alt) 
         for location_code in location_codes]
         )
     asis.plot_map(ax=ax_i, min_elevation=10, pcolormesh_kwargs={'rasterized':True}, asi_label=False)
