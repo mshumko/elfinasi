@@ -36,9 +36,6 @@ elfin_labels=(
 themis_mapped_state = {themis_probe:map_themis(themis_probe, time_range, alt)}
 
 fig = plt.figure(figsize=(9, 9))
-# Add a gridspec with two rows and two columns and a ratio of 1 to 4 between
-# the size of the marginal Axes and the main Axes in both directions.
-# Also adjust the subplot parameters for a square plot.
 gs = fig.add_gridspec(5, len(plot_times),
                       left=0.03, right=0.95, bottom=0.15, top=0.97,
                       wspace=0.02, hspace=0.1,
