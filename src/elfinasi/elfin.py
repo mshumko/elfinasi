@@ -1247,7 +1247,8 @@ class EPD_PAD:
     def plot_blc(
             self,
             ax:plt.Axes, 
-            lc_exclusion_angle:float=10,
+            colorbar=False,
+            # lc_exclusion_angle:float=10,
             vmin:float=None, 
             vmax:float=None,
             pretty_plot:bool=True
@@ -1278,16 +1279,19 @@ class EPD_PAD:
         """
         p = ax.pcolormesh(
             self.pad.time, 
-            self.pad.energy, 
+            self.energy, 
             self.blc.T,
             shading='nearest',
             norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
             )
-        cbar = plt.colorbar(
-            p, 
-            ax=ax, 
-            label=f'BLC Electron Flux\n{self._flux_units}'
-            )
+        if colorbar:
+            cbar = plt.colorbar(
+                p, 
+                ax=ax, 
+                label=f'BLC Electron Flux\n{self._flux_units}'
+                )
+        else:
+            cbar = None
 
         if pretty_plot:
             ax.set(ylabel='Energy\n[keV]', yscale='log', facecolor='grey')
@@ -1327,7 +1331,7 @@ class EPD_PAD:
         """
         p = ax.pcolormesh(
             self.pad.time, 
-            self.pad.energy, 
+            self.energy, 
             self.ablc.T,
             shading='nearest',
             norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
@@ -1374,11 +1378,9 @@ class EPD_PAD:
         matplotlib.colorbar.Colorbar
             The colorbar object
         """
-        
-
         p = ax.pcolormesh(
             self.pad.time, 
-            self.pad.energy, 
+            self.energy, 
             self.dlc.T,
             shading='nearest',
             norm=matplotlib.colors.LogNorm(vmin=vmin, vmax=vmax)
