@@ -3,7 +3,7 @@
 # Retrieved 2026-09-15, License - CC BY-SA 3.0
 
 # TODO: Google "mplot3d plot change animate view angle rotation"
-
+# https://matplotlib.org/stable/gallery/mplot3d/rotate_axes3d_sgskip.html
 import itertools
 
 from mpl_toolkits.mplot3d import Axes3D
