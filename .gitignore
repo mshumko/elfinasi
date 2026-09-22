@@ -136,3 +136,4 @@ dmypy.json
 # Compiled extensions
 *.c
 *.cdf
+*Zone.Identifier
